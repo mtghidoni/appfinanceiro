@@ -2,45 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tokens de cor em OKLCH (apenas os canais "L C H"), consumidos pelo
+ * tailwind.config.ts como oklch(var(--c-x) / <alpha-value>) — assim
+ * modificadores de opacidade como bg-brand/10 funcionam.
+ * Neutros levemente tingidos para o azul da marca (hue 262).
+ */
 :root {
   color-scheme: light;
-  --c-bg:        #F0F2F8;
-  --c-card:      #FFFFFF;
-  --c-border:    #E2E6F0;
-  --c-text:      #1a1f36;
-  --c-muted:     #6b7280;
-  --c-thead:     #F4F5FA;
-  --c-row-even:  #FAFBFD;
-  --c-row-hover: #F0F4FF;
-  --c-subtotal:  #EEF2FA;
-  --c-heading:   #1F3864;
-  --c-accent:    #1F3864;
+  --c-bg:        0.977 0.004 262;
+  --c-card:      1 0 0;
+  --c-border:    0.918 0.008 262;
+  --c-text:      0.235 0.022 262;
+  --c-muted:     0.505 0.018 262;
+  --c-thead:     0.968 0.005 262;
+  --c-row-hover: 0.968 0.008 262;
+  --c-subtotal:  0.962 0.008 262;
+  --c-heading:   0.205 0.025 262;
+
+  --c-brand:     0.52 0.19 264;
+  --c-on-brand:  1 0 0;
+  --c-income:    0.56 0.13 158;
+  --c-expense:   0.64 0.16 42;
+  --c-danger:    0.565 0.21 25;
+  --c-warning:   0.76 0.15 75;
+
+  --c-success-soft: 0.95 0.045 158;
+  --c-success-ink:  0.42 0.1 158;
+  --c-warning-soft: 0.96 0.055 85;
+  --c-warning-ink:  0.47 0.1 60;
+  --c-danger-soft:  0.95 0.03 25;
+  --c-danger-ink:   0.47 0.17 25;
+  --c-info-soft:    0.95 0.03 264;
+  --c-info-ink:     0.45 0.17 264;
 }
 
 .dark {
   color-scheme: dark;
-  --c-bg:        #11141D;
-  --c-card:      #1A1F2E;
-  --c-border:    #2A3144;
-  --c-text:      #E5E9F2;
-  --c-muted:     #8B93A7;
-  --c-thead:     #161A26;
-  --c-row-even:  #1D2333;
-  --c-row-hover: #232C45;
-  --c-subtotal:  #1F2740;
-  --c-heading:   #9DB8E8;
-  --c-accent:    #5B82C9;
+  --c-bg:        0.165 0.012 262;
+  --c-card:      0.205 0.014 262;
+  --c-border:    0.285 0.016 262;
+  --c-text:      0.93 0.008 262;
+  --c-muted:     0.70 0.015 262;
+  --c-thead:     0.185 0.013 262;
+  --c-row-hover: 0.245 0.016 262;
+  --c-subtotal:  0.235 0.016 262;
+  --c-heading:   0.96 0.006 262;
+
+  --c-brand:     0.70 0.15 266;
+  --c-on-brand:  0.17 0.02 262;
+  --c-income:    0.76 0.14 158;
+  --c-expense:   0.76 0.13 48;
+  --c-danger:    0.70 0.18 25;
+  --c-warning:   0.83 0.14 80;
+
+  --c-success-soft: 0.30 0.06 158;
+  --c-success-ink:  0.86 0.12 158;
+  --c-warning-soft: 0.32 0.06 80;
+  --c-warning-ink:  0.88 0.12 85;
+  --c-danger-soft:  0.31 0.07 25;
+  --c-danger-ink:   0.85 0.11 25;
+  --c-info-soft:    0.31 0.07 264;
+  --c-info-ink:     0.86 0.09 264;
 }
 
 @layer base {
   body {
     @apply bg-bg text-apptext font-sans;
   }
+  h1, h2, h3 { text-wrap: balance; }
 }
 
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar { width: 6px; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-border rounded;
+  }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

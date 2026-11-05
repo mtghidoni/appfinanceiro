@@ -1,9 +1,12 @@
 "use client";
 
-import { brl, parseBrl } from "@/lib/utils";
+import { House } from "lucide-react";
+import { brl, parseBrl, fmtInput } from "@/lib/utils";
 import { CATS_FIXOS, STATUS_PAGO } from "@/lib/constants";
 import type { GastoFixo, StatusPago } from "@/types";
 import MobileItemCard, { CardField, FIELD_CLS, FIELD_MONO_CLS, toneForPago } from "@/components/ui/MobileItemCard";
+import SectionCard, { ColumnHeader, EmptyRow } from "@/components/ui/SectionCard";
+import { CELL_CLS, SELECT_CELL_CLS, NUM_CELL_CLS, ROW_CLS, statusSelectCls, DeleteButton } from "./cells";
 
 interface Props {
   rows: GastoFixo[];
@@ -12,8 +15,11 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+const COLS = "grid-cols-[2fr_1.2fr_1fr_.9fr_32px]";
+
 export default function GastosFixosTable({ rows, onAdd, onUpdate, onDelete }: Props) {
   const subtotal = rows.reduce((s, it) => s + Number(it.valor), 0);
+  const pagos = rows.filter(r => r.pago === "OK").length;
 
   function cyclePago(row: GastoFixo) {
     const next = STATUS_PAGO[(STATUS_PAGO.indexOf(row.pago) + 1) % STATUS_PAGO.length];
@@ -21,69 +27,62 @@ export default function GastosFixosTable({ rows, onAdd, onUpdate, onDelete }: Pr
   }
 
   return (
-    <div>
-      <div className="bg-fixos rounded-t-lg px-4 py-2.5 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[.5px]">Gastos Fixos</h3>
-        <button onClick={onAdd} className="bg-white/20 hover:bg-white/35 text-white text-xs font-semibold px-2.5 py-1 rounded-md transition-colors">
-          + Adicionar
-        </button>
-      </div>
-
+    <SectionCard
+      icon={House}
+      tone="expense"
+      title="Gastos fixos"
+      meta={rows.length ? `${pagos} de ${rows.length} pagos` : "Nenhum item"}
+      total={brl(subtotal)}
+      onAdd={onAdd}
+    >
       {/* Desktop: tabela */}
-      <div className="hidden md:block bg-card border border-border border-t-0 rounded-b-lg overflow-hidden">
-        <div className="grid grid-cols-[2fr_1.2fr_1fr_1fr_32px] bg-thead border-b border-border px-3 py-1.5">
-          {["Descrição","Categoria","Valor (R$)","Pago?",""].map((h, i) => (
-            <span key={i} className="text-[10px] font-bold text-muted uppercase tracking-[.4px]">{h}</span>
-          ))}
-        </div>
+      <div className="hidden md:block">
+        <ColumnHeader cols={COLS} labels={["Descrição", "Categoria", "Valor", "Situação", ""]} right={[2]} />
+        {rows.length === 0 && <EmptyRow>Nenhum gasto fixo neste mês.</EmptyRow>}
         {rows.map(row => (
-          <div
-            key={row.id}
-            className="grid grid-cols-[2fr_1.2fr_1fr_1fr_32px] px-3 py-2 items-center gap-2 border-b border-border last:border-0 odd:bg-card even:bg-roweven hover:bg-rowhover"
-          >
+          <div key={row.id} className={`${ROW_CLS} ${COLS}`}>
             <input
               key={"d" + row.desc}
               type="text"
               placeholder="Descrição"
               defaultValue={row.desc}
               onBlur={e => onUpdate(row.id, "desc", e.target.value)}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors"
+              className={CELL_CLS}
             />
             <select
               key={"c" + row.cat}
               defaultValue={row.cat}
               onChange={e => onUpdate(row.id, "cat", e.target.value)}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent"
+              className={SELECT_CELL_CLS}
             >
               {CATS_FIXOS.map(c => <option key={c}>{c}</option>)}
             </select>
             <input
               key={"v" + row.valor}
               type="text"
+              inputMode="decimal"
               placeholder="0,00"
-              defaultValue={row.valor > 0 ? String(row.valor) : ""}
+              defaultValue={fmtInput(Number(row.valor))}
               onBlur={e => onUpdate(row.id, "valor", parseBrl(e.target.value))}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-mono text-[13px] text-right bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors"
+              className={NUM_CELL_CLS}
             />
             <select
               key={"p" + row.pago}
               defaultValue={row.pago}
               onChange={e => onUpdate(row.id, "pago", e.target.value as StatusPago)}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent"
+              className={statusSelectCls(row.pago)}
+              aria-label="Situação do pagamento"
             >
               {STATUS_PAGO.map(s => <option key={s}>{s}</option>)}
             </select>
-            <button onClick={() => onDelete(row.id)} className="text-[#ccc] dark:text-[#4A5568] hover:text-vermelho dark:hover:text-vermelho text-sm flex items-center justify-center transition-colors">✕</button>
+            <DeleteButton onClick={() => onDelete(row.id)} />
           </div>
         ))}
-        <div className="flex justify-between items-center bg-subtotal px-3 py-2 border-t-[1.5px] border-border">
-          <span className="text-xs font-bold text-heading">Subtotal</span>
-          <span className="font-mono text-sm font-bold text-heading">{brl(subtotal)}</span>
-        </div>
       </div>
 
-      {/* Mobile: cards expansíveis com swipe para excluir */}
-      <div className="md:hidden bg-thead border border-border border-t-0 rounded-b-lg p-2 space-y-2">
+      {/* Mobile: lista com itens expansíveis e swipe para excluir */}
+      <div className="md:hidden divide-y divide-border">
+        {rows.length === 0 && <EmptyRow>Nenhum gasto fixo neste mês.</EmptyRow>}
         {rows.map(row => (
           <MobileItemCard
             key={row.id}
@@ -121,12 +120,12 @@ export default function GastosFixosTable({ rows, onAdd, onUpdate, onDelete }: Pr
                 type="text"
                 inputMode="decimal"
                 placeholder="0,00"
-                defaultValue={row.valor > 0 ? String(row.valor).replace(".", ",") : ""}
+                defaultValue={fmtInput(Number(row.valor))}
                 onBlur={e => onUpdate(row.id, "valor", parseBrl(e.target.value))}
                 className={FIELD_MONO_CLS}
               />
             </CardField>
-            <CardField label="Pago?">
+            <CardField label="Situação">
               <select
                 key={"p" + row.pago}
                 defaultValue={row.pago}
@@ -138,11 +137,7 @@ export default function GastosFixosTable({ rows, onAdd, onUpdate, onDelete }: Pr
             </CardField>
           </MobileItemCard>
         ))}
-        <div className="flex justify-between items-center bg-subtotal rounded-lg px-3.5 py-2.5">
-          <span className="text-xs font-bold text-heading">Subtotal</span>
-          <span className="font-mono text-sm font-bold text-heading">{brl(subtotal)}</span>
-        </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }

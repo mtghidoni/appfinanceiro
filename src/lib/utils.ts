@@ -27,6 +27,11 @@ export function brl(value: number): string {
   return "R$ " + value.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+// Valor para preencher um campo de edição (ex: 1234.5 → "1.234,50"); vazio quando zero.
+export function fmtInput(value: number): string {
+  return value > 0 ? brl(Number(value)).replace("R$ ", "") : "";
+}
+
 export function parseBrl(s: string | number | null | undefined): number {
   if (typeof s === "number") return s;
   const str = String(s ?? "").trim().replace("R$", "").replace(/\s/g, "");

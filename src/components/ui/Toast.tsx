@@ -20,9 +20,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <Ctx.Provider value={{ show }}>
       {children}
       <div
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl text-white text-[13px] font-medium shadow-2xl z-[9999] pointer-events-none transition-all duration-[250ms] ${
+        className={`fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 max-w-[calc(100vw-32px)] px-5 py-3 rounded-full text-sm font-medium shadow-2xl z-toast pointer-events-none transition-all duration-300 ease-out ${
           state.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        } ${state.err ? "bg-vermelho" : "bg-[#1a1f36] dark:bg-[#2E3A5C]"}`}
+        } ${state.err ? "bg-danger text-white" : "bg-heading text-card"}`}
       >
         {state.msg}
       </div>
