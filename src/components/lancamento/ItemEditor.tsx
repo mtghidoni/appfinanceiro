@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Link2, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Layers, Link2, Trash2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { TIPO_PARCELAMENTO } from "@/lib/constants";
 import { brl, fmtInput, parseBrl } from "@/lib/utils";
@@ -35,7 +36,6 @@ export default function ItemEditor({ open, kind, initial, linked = false, onSave
   const [option, setOption] = useState<string>(meta.options[0]);
   const [valor, setValor] = useState("");
   const [status, setStatus] = useState<string | undefined>(meta.statuses?.[1]);
-  const [parcela, setParcela] = useState("");
   const valorRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,12 +44,15 @@ export default function ItemEditor({ open, kind, initial, linked = false, onSave
     setOption(initial?.option ?? meta.options[0]);
     setValor(initial ? fmtInput(initial.valor) : "");
     setStatus(initial?.status ?? meta.statuses?.[1]); // novo item começa "Pendente"
-    setParcela(initial?.parcela ?? "");
     // Novo item: foca o valor para abrir o teclado numérico de imediato
     if (!initial) setTimeout(() => valorRef.current?.focus(), 60);
   }, [open, initial, kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showParcela = kind === "entrada" && option === TIPO_PARCELAMENTO;
+  // Entradas antigas do tipo "Parcelamento cliente" (lançadas à mão) mantêm o tipo visível
+  // para não perder a seleção ao editar; novas entradas não oferecem mais essa opção.
+  const options = initial?.option && !meta.options.includes(initial.option)
+    ? [...meta.options, initial.option]
+    : meta.options;
   const canSave = linked || desc.trim() !== "" || parseBrl(valor) > 0;
 
   function submit(e: React.FormEvent) {
@@ -60,7 +63,8 @@ export default function ItemEditor({ open, kind, initial, linked = false, onSave
       option,
       valor: parseBrl(valor),
       status,
-      parcela: showParcela ? parcela.trim() : initial?.parcela ?? "",
+      // O rótulo "5/10" só é mantido enquanto o tipo continuar sendo parcelamento.
+      parcela: option === TIPO_PARCELAMENTO ? initial?.parcela ?? "" : "",
     });
   }
 
@@ -118,7 +122,7 @@ export default function ItemEditor({ open, kind, initial, linked = false, onSave
             <fieldset>
               <legend className="block text-sm font-medium text-muted mb-2">{meta.optionLabel}</legend>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {meta.options.map(o => {
+                {options.map(o => {
                   const Icon = iconFor(o);
                   const active = o === option;
                   return (
@@ -141,18 +145,15 @@ export default function ItemEditor({ open, kind, initial, linked = false, onSave
               </div>
             </fieldset>
 
-            {showParcela && (
-              <label className="block">
-                <span className="block text-sm font-medium text-muted mb-1.5">Parcela</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={parcela}
-                  onChange={e => setParcela(e.target.value)}
-                  placeholder="Ex: 5/10"
-                  className={FIELD + " tabular-nums"}
-                />
-              </label>
+            {kind === "entrada" && (
+              <Link
+                href="/parcelamentos"
+                className="flex items-center gap-2.5 rounded-xl bg-thead px-3.5 py-3 text-sm text-muted hover:text-apptext transition-colors"
+              >
+                <Layers size={16} className="text-brand shrink-0" />
+                <span className="flex-1">Cliente vai pagar em parcelas? Cadastre em <strong className="text-apptext font-semibold">Parcelamentos</strong> — as parcelas entram sozinhas em cada mês.</span>
+                <ChevronRight size={16} className="shrink-0" />
+              </Link>
             )}
           </>
         )}

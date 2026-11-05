@@ -11,11 +11,13 @@ export const CATS_VAR = [
   "Alimentação","Beleza","Vestuário","Saúde","Lazer","Profissional","Educação","Casa","Transporte","Outros",
 ];
 
+// Tipos selecionáveis numa nova entrada. "Parcelamento cliente" não entra aqui:
+// parcelas são geradas automaticamente pela aba Parcelamentos.
 export const TIPOS_ENT = [
-  "Honorário – processo","Diligência","Parcelamento cliente","Aluguel de sala","Outros",
+  "Honorário – processo","Diligência","Aluguel de sala","Outros",
 ];
 
-// Tipo de entrada que habilita o campo de parcela (ex: "5/10")
+// Tipo das entradas geradas pelos parcelamentos (e de entradas antigas lançadas à mão).
 export const TIPO_PARCELAMENTO = "Parcelamento cliente";
 
 export const TIPOS_MOV = [
