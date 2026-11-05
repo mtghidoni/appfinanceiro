@@ -23,7 +23,7 @@
   --c-brand:     0.52 0.19 264;
   --c-on-brand:  1 0 0;
   --c-brand-inverse: 0.80 0.11 266;
-  --c-income:    0.56 0.13 158;
+  --c-income:    0.55 0.115 180;
   --c-expense:   0.64 0.16 42;
   --c-danger:    0.565 0.21 25;
   --c-warning:   0.76 0.15 75;
@@ -53,8 +53,8 @@
   --c-brand:     0.70 0.15 266;
   --c-on-brand:  0.17 0.02 262;
   --c-brand-inverse: 0.50 0.19 264;
-  --c-income:    0.76 0.14 158;
-  --c-expense:   0.76 0.13 48;
+  --c-income:    0.66 0.12 178;
+  --c-expense:   0.66 0.14 45;
   --c-danger:    0.70 0.18 25;
   --c-warning:   0.83 0.14 80;
 
