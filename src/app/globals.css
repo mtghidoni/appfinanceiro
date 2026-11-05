@@ -69,9 +69,18 @@
 }
 
 @layer base {
+  html, body {
+    /* Sensação de app: sem "elástico" da página inteira, sem flash cinza ao tocar e sem zoom por duplo toque */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-bg text-apptext font-sans;
   }
+  /* Segurar o dedo num botão ou link não abre o menu de pré-visualização do iOS */
+  a, button { -webkit-touch-callout: none; }
   h1, h2, h3 { text-wrap: balance; }
 }
 
