@@ -206,4 +206,4 @@ export default function ItemEditor({ open, kind, initial, linked = false, onSave
 }
 
 const FIELD =
-  "w-full border border-border rounded-xl px-3.5 py-3 text-[15px] bg-bg text-apptext outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 focus:bg-card transition placeholder:text-muted/70";
+  "w-full border border-border rounded-xl px-3.5 py-3 text-base bg-bg text-apptext outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 focus:bg-card transition placeholder:text-muted/70";
