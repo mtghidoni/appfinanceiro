@@ -68,7 +68,7 @@ export default function ParcelModal({ open, initial, onSave, onDelete, onClose }
 
   return (
     <Modal open={open} onClose={onClose}>
-      <h3 className="text-base font-bold text-heading mb-5">{initial ? "Editar Parcelamento" : "Novo Parcelamento"}</h3>
+      <h3 className="text-lg font-semibold text-heading mb-5">{initial ? "Editar Parcelamento" : "Novo Parcelamento"}</h3>
       <div className="space-y-2.5">
         <Row label="Cliente">
           <input value={cliente} onChange={e => setCliente(e.target.value)} className={fieldCls} />
@@ -99,7 +99,7 @@ export default function ParcelModal({ open, initial, onSave, onDelete, onClose }
           </Row>
         ) : (
           <Row label="Recebidas">
-            <span className="text-[13px] text-muted">
+            <span className="text-sm text-muted">
               {initial.parcelas_pagas} de {n} — marque nos lançamentos mensais
             </span>
           </Row>
@@ -112,31 +112,31 @@ export default function ParcelModal({ open, initial, onSave, onDelete, onClose }
       </div>
 
       {/* Prévia do auto-lançamento */}
-      <div className="mt-4 rounded-lg bg-subtotal px-3.5 py-3 text-[12px] text-apptext space-y-1">
+      <div className="mt-5 rounded-xl bg-subtotal px-4 py-3 text-[13px] text-apptext space-y-1">
         <div className="flex justify-between">
           <span className="text-muted">Valor por parcela</span>
-          <span className="font-mono font-semibold">{brl(valorPorParcela)}</span>
+          <span className="tabular-nums font-semibold">{brl(valorPorParcela)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted">Lançará</span>
           <span className="font-semibold">{n}× — {mesLabel(mesInicialKey)} até {mesLabel(mesFimKey)}</span>
         </div>
-        <p className="text-[11px] text-muted pt-1 leading-relaxed">
+        <p className="text-xs text-muted pt-1 leading-relaxed">
           As {n} parcelas serão lançadas automaticamente como entradas nos respectivos meses.
         </p>
       </div>
 
       <div className="flex items-center justify-between mt-5">
         {onDelete ? (
-          <button onClick={onDelete} className="bg-vermelho text-white rounded-lg px-4 py-2 text-[13px] font-sans cursor-pointer">
+          <button onClick={onDelete} className="text-danger hover:bg-danger/10 rounded-full px-3 py-2 text-sm font-semibold transition-colors">
             Remover
           </button>
         ) : <span />}
         <div className="flex gap-2">
-          <button onClick={onClose} className="border-[1.5px] border-border rounded-lg px-4 py-2 text-[13px] font-sans cursor-pointer bg-none">
+          <button onClick={onClose} className="border border-border rounded-full px-4 py-2 text-sm font-medium hover:bg-thead transition-colors">
             Cancelar
           </button>
-          <button onClick={handleSave} className="bg-ent text-white rounded-lg px-4 py-2 text-[13px] font-semibold cursor-pointer hover:opacity-90">
+          <button onClick={handleSave} className="bg-brand text-onbrand rounded-full px-5 py-2 text-sm font-semibold hover:bg-brand/90 transition-colors">
             Salvar
           </button>
         </div>
@@ -147,11 +147,11 @@ export default function ParcelModal({ open, initial, onSave, onDelete, onClose }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[130px_1fr] items-center gap-2">
-      <label className="text-[13px] font-medium">{label}</label>
+    <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[130px_1fr] items-center gap-2">
+      <label className="text-sm font-medium text-muted">{label}</label>
       {children}
     </div>
   );
 }
 
-const fieldCls = "border-[1.5px] border-border rounded-lg px-2.5 py-2 font-sans text-[13px] bg-bg text-apptext outline-none w-full focus:border-accent";
+const fieldCls = "border border-border rounded-lg px-3 py-2 font-sans text-sm bg-bg text-apptext outline-none w-full focus:border-accent focus:ring-2 focus:ring-accent/20 focus:bg-card transition";

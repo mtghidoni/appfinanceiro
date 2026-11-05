@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { CircleCheck, HandCoins, Layers, Pencil, Plus, X } from "lucide-react";
 import { brl, mesLabel, addMonths } from "@/lib/utils";
 import { useParcelamentos } from "@/hooks/useParcelamentos";
 import { useToast } from "@/components/ui/Toast";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import MobileItemCard, { CHIP_TONES, type ChipTone } from "@/components/ui/MobileItemCard";
+import StatCard from "@/components/ui/StatCard";
+import { SectionSkeleton } from "@/components/ui/Skeleton";
 import ParcelModal from "./ParcelModal";
 import type { Parcelamento, StatusParc } from "@/types";
 
@@ -51,39 +54,42 @@ function Inner() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Header */}
-      <div className="bg-card border-b border-border px-4 md:px-6 h-[60px] flex items-center justify-between gap-2 flex-shrink-0">
-        <h1 className="text-[15px] md:text-[17px] font-bold text-heading">Controle de Parcelamentos</h1>
+      <header className="bg-card border-b border-border px-4 md:px-8 h-16 flex items-center justify-between gap-2 flex-shrink-0">
+        <h1 className="text-lg font-semibold text-heading">Parcelamentos</h1>
         <button
           onClick={() => setModalId("new")}
-          className="bg-ent text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+          className="bg-brand text-onbrand rounded-full pl-3 pr-4 py-2 text-sm font-semibold hover:bg-brand/90 active:scale-[.98] transition flex items-center gap-1.5"
         >
-          + Novo
+          <Plus size={17} strokeWidth={2.5} />
+          Novo
         </button>
-      </div>
+      </header>
 
-      {/* Summary */}
-      <div className="bg-card border-b border-border px-4 md:px-6 py-3 flex gap-2 md:gap-3 flex-shrink-0 flex-wrap">
-        <SumCard label="Total a Receber" value={brl(aReceber)} color="bg-ent" />
-        <SumCard label="Total Recebido" value={brl(recebido)} color="bg-fixos" />
-        <SumCard label="Ativos" value={String(ativos)} color="bg-navy" />
-      </div>
+      <div className="flex-1 overflow-y-auto scrollbar-thin">
+       <div className="max-w-6xl mx-auto px-3 md:px-8 py-4 md:py-6 pb-10 space-y-4">
+        {/* Resumo */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <StatCard icon={HandCoins}   tone="income"  label="A receber" value={brl(aReceber)} />
+          <StatCard icon={CircleCheck} tone="brand"   label="Recebido"  value={brl(recebido)} />
+          <div className="col-span-2 md:col-span-1">
+            <StatCard icon={Layers}    tone="neutral" label="Parcelamentos ativos" value={String(ativos)} />
+          </div>
+        </div>
 
-      {/* Lista */}
-      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 scrollbar-thin">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-muted text-sm">Carregando…</div>
+          <SectionSkeleton rows={4} />
         ) : (
           <>
             {/* Desktop: tabela */}
-            <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1.4fr_1.6fr_.9fr_.5fr_.5fr_.6fr_.9fr_.9fr_.9fr_.8fr_40px] gap-1.5 px-3.5 py-2 bg-thead border-b-[1.5px] border-border">
-                {["Cliente","Descrição","Total","Pagas","Rest.","R$/Parc.","Recebido","A Receber","Situação","Progresso",""].map((h,i) => (
-                  <span key={i} className="text-[10px] font-bold text-muted uppercase">{h}</span>
+            <div className="hidden md:block bg-card border border-border rounded-2xl overflow-hidden">
+              <div className={`grid ${PARC_COLS} gap-2 px-5 py-2.5 bg-thead/60 border-b border-border`}>
+                {["Cliente","Total","Parcela","Recebido","A receber","Situação","Progresso",""].map((h,i) => (
+                  <span key={i} className={`text-xs font-medium text-muted ${i >= 1 && i <= 4 ? "text-right" : ""}`}>{h}</span>
                 ))}
               </div>
               {parcelas.length === 0 ? (
-                <div className="px-8 py-8 text-center text-muted text-[13px]">
-                  Nenhum parcelamento. Clique em &quot;+ Novo&quot; para adicionar.
+                <div className="px-8 py-10 text-center text-muted text-sm">
+                  Nenhum parcelamento ainda. Use “Novo” para cadastrar o primeiro.
                 </div>
               ) : parcelas.map(p => (
                 <ParcelRow
@@ -96,10 +102,10 @@ function Inner() {
             </div>
 
             {/* Mobile: cards expansíveis com swipe para excluir */}
-            <div className="md:hidden space-y-2">
+            <div className="md:hidden bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
               {parcelas.length === 0 ? (
-                <div className="bg-card border border-border rounded-xl px-6 py-8 text-center text-muted text-[13px]">
-                  Nenhum parcelamento. Toque em &quot;+ Novo&quot; para adicionar.
+                <div className="px-6 py-10 text-center text-muted text-sm">
+                  Nenhum parcelamento ainda. Toque em “Novo” para cadastrar o primeiro.
                 </div>
               ) : parcelas.map(p => (
                 <ParcelCard
@@ -112,6 +118,7 @@ function Inner() {
             </div>
           </>
         )}
+       </div>
       </div>
 
       <ParcelModal
@@ -133,14 +140,7 @@ function Inner() {
   );
 }
 
-function SumCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className={`flex-1 min-w-[140px] rounded-xl px-3.5 py-2.5 flex flex-col gap-1 ${color}`}>
-      <span className="text-[11px] text-white/80 font-medium">{label}</span>
-      <span className="text-lg font-bold text-white font-mono">{value}</span>
-    </div>
-  );
-}
+const PARC_COLS = "grid-cols-[2fr_1fr_.7fr_1fr_1fr_.9fr_1fr_32px]";
 
 const BADGE_TONE: Record<StatusParc, ChipTone> = {
   Ativo:        "ok",
@@ -149,8 +149,8 @@ const BADGE_TONE: Record<StatusParc, ChipTone> = {
   Suspenso:     "warn",
 };
 
-function progressColor(s: StatusParc) {
-  return s === "Inadimplente" ? "#C00000" : s === "Concluído" ? "#2E75B6" : "#70AD47";
+function progressClass(s: StatusParc) {
+  return s === "Inadimplente" ? "bg-danger" : s === "Concluído" ? "bg-brand" : s === "Suspenso" ? "bg-warning" : "bg-income";
 }
 
 // Período coberto pelas parcelas (ex: "jun/26 – mar/27"); vazio se não houver mês inicial.
@@ -168,34 +168,35 @@ function ParcelRow({ p, onEdit, onDelete }: {
 
   return (
     <div
-      className="grid grid-cols-[1.4fr_1.6fr_.9fr_.5fr_.5fr_.6fr_.9fr_.9fr_.9fr_.8fr_40px] gap-1.5 px-3.5 py-2 border-b border-border last:border-0 even:bg-roweven hover:bg-rowhover cursor-pointer items-center"
+      className={`group grid ${PARC_COLS} gap-2 px-5 py-3 border-b border-border last:border-0 hover:bg-rowhover cursor-pointer items-center transition-colors`}
       onClick={onEdit}
     >
-      <span className="font-sans font-semibold text-[13px] leading-tight">
-        {p.cliente}
-        {periodo(p) && <span className="block text-[10px] text-muted font-normal font-mono">{periodo(p)}</span>}
+      <span className="min-w-0">
+        <span className="block text-sm font-medium truncate">{p.cliente}</span>
+        <span className="block text-xs text-muted truncate">
+          {[p.desc, periodo(p)].filter(Boolean).join(" · ")}
+        </span>
       </span>
-      <span className="font-sans text-[12px] text-muted">{p.desc}</span>
-      <span className="font-mono text-[12px]">{brl(p.valor_total)}</span>
-      <span className="font-mono text-[12px]">{p.parcelas_pagas}/{p.num_parcelas}</span>
-      <span className="font-mono text-[12px]">{rst}</span>
-      <span className="font-mono text-[12px]">{brl(vp)}</span>
-      <span className="font-mono text-[12px]">{brl(vp * p.parcelas_pagas)}</span>
-      <span className="font-mono text-[12px]">{brl(vp * rst)}</span>
+      <span className="text-sm tabular-nums text-right">{brl(p.valor_total)}</span>
+      <span className="text-sm tabular-nums text-right text-muted">{brl(vp)}</span>
+      <span className="text-sm tabular-nums text-right">{brl(vp * p.parcelas_pagas)}</span>
+      <span className="text-sm tabular-nums text-right font-medium">{brl(vp * rst)}</span>
       <span>
-        <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${CHIP_TONES[BADGE_TONE[p.situacao] ?? "ok"]}`}>
+        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${CHIP_TONES[BADGE_TONE[p.situacao] ?? "ok"]}`}>
           {p.situacao}
         </span>
       </span>
-      <div>
-        <div className="h-1.5 bg-border rounded-full overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: progressColor(p.situacao) }} />
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-thead rounded-full overflow-hidden">
+          <div className={`h-full rounded-full ${progressClass(p.situacao)}`} style={{ width: `${pct}%` }} />
         </div>
+        <span className="text-xs tabular-nums text-muted w-9 text-right">{p.parcelas_pagas}/{p.num_parcelas}</span>
       </div>
       <button
         onClick={e => { e.stopPropagation(); onDelete(); }}
-        className="text-[#ccc] dark:text-[#4A5568] hover:text-vermelho dark:hover:text-vermelho text-sm flex items-center justify-center transition-colors"
-      >✕</button>
+        aria-label="Remover parcelamento"
+        className="size-8 grid place-items-center rounded-lg text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition"
+      ><X size={16} /></button>
     </div>
   );
 }
@@ -218,22 +219,23 @@ function ParcelCard({ p, onEdit, onDelete }: {
       onDelete={onDelete}
     >
       <div className="flex items-center gap-2.5">
-        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: progressColor(p.situacao) }} />
+        <div className="flex-1 h-1.5 bg-thead rounded-full overflow-hidden">
+          <div className={`h-full rounded-full ${progressClass(p.situacao)}`} style={{ width: `${pct}%` }} />
         </div>
-        <span className="font-mono text-[11px] text-muted">{p.parcelas_pagas}/{p.num_parcelas}</span>
+        <span className="tabular-nums text-xs text-muted">{p.parcelas_pagas}/{p.num_parcelas} pagas</span>
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-        <CardStat label="R$ / Parcela" value={brl(vp)} />
+        <CardStat label="Por parcela" value={brl(vp)} />
         <CardStat label="Restantes" value={String(rst)} />
         <CardStat label="Recebido" value={brl(vp * p.parcelas_pagas)} />
-        <CardStat label="A Receber" value={brl(vp * rst)} />
+        <CardStat label="A receber" value={brl(vp * rst)} />
       </div>
       <button
         onClick={onEdit}
-        className="w-full bg-navy text-white rounded-lg py-2 text-[13px] font-semibold active:opacity-80 transition-opacity"
+        className="w-full flex items-center justify-center gap-2 bg-brand text-onbrand rounded-xl py-2.5 text-sm font-semibold active:opacity-80 transition-opacity"
       >
-        ✏️ Editar
+        <Pencil size={15} />
+        Editar parcelamento
       </button>
     </MobileItemCard>
   );
@@ -242,8 +244,8 @@ function ParcelCard({ p, onEdit, onDelete }: {
 function CardStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[11px] text-muted">{label}</span>
-      <span className="font-mono text-[12px] font-semibold">{value}</span>
+      <span className="text-[13px] text-muted">{label}</span>
+      <span className="tabular-nums text-sm font-semibold">{value}</span>
     </div>
   );
 }

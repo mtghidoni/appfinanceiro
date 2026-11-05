@@ -2,17 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Download, FileSpreadsheet, LogOut, Moon, Sun, Trash2, Upload, Wallet, type LucideIcon,
+} from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useDataControls } from "@/hooks/useDataControls";
 import { useTheme } from "@/hooks/useTheme";
+import { NAV, isActive } from "./nav";
 
 interface Props { userEmail: string; }
-
-const NAV = [
-  { href: "/lancamento",    icon: "📋", label: "Lançamento" },
-  { href: "/parcelamentos", icon: "📑", label: "Parcelamentos" },
-  { href: "/dashboard",     icon: "📊", label: "Dashboard" },
-];
 
 export default function Sidebar({ userEmail }: Props) {
   const pathname = usePathname();
@@ -25,46 +23,57 @@ export default function Sidebar({ userEmail }: Props) {
 
   return (
     <>
-      <aside className="w-[220px] bg-navy flex-col flex-shrink-0 z-10 hidden md:flex">
-        <div className="px-5 pt-7 pb-5 border-b border-white/[.08]">
-          <div className="text-3xl">💰</div>
-          <div className="text-[15px] font-bold text-white mt-2 leading-tight">
-            Controle<br />Financeiro
-          </div>
-          <div className="text-[11px] text-white/40 mt-0.5">Dados na nuvem</div>
+      <aside className="w-[244px] bg-card border-r border-border flex-col flex-shrink-0 z-sticky hidden md:flex">
+        <div className="px-5 h-16 flex items-center gap-2.5">
+          <span className="size-8 grid place-items-center rounded-[10px] bg-brand text-onbrand">
+            <Wallet size={17} strokeWidth={2.25} />
+          </span>
+          <span className="text-[15px] font-semibold text-heading leading-tight">Controle Financeiro</span>
         </div>
 
-        <nav className="py-3 flex-1">
-          {NAV.map(({ href, icon, label }) => {
-            const active = pathname === href || pathname.startsWith(href + "/");
+        <nav className="px-3 pt-3 flex-1 space-y-0.5" aria-label="Principal">
+          {NAV.map(({ href, icon: Icon, label }) => {
+            const active = isActive(pathname, href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2.5 px-5 py-2.5 text-[13px] font-medium border-l-[3px] transition-all ${
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
                   active
-                    ? "bg-white/10 text-white border-amarelo"
-                    : "text-white/60 border-transparent hover:bg-white/[.06] hover:text-white"
+                    ? "bg-brand/10 text-brand font-semibold"
+                    : "text-muted font-medium hover:bg-thead hover:text-apptext"
                 }`}
               >
-                <span className="text-base w-5 text-center">{icon}</span>
+                <Icon size={18} strokeWidth={active ? 2.25 : 2} />
                 {label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="py-2 border-t border-white/[.08] flex flex-col gap-0.5">
-          <SidebarBtn onClick={toggle} label={dark ? "☀️ Modo claro" : "🌙 Modo escuro"} />
-          <SidebarBtn onClick={handleExcelClick} label="📥 Exportar Excel"   disabled={busy} />
-          <SidebarBtn onClick={handleJSONClick}  label="💾 Backup (JSON)"    disabled={busy} />
-          <SidebarBtn onClick={handleRestoreClick} label="📂 Restaurar Backup" disabled={busy} />
-          <SidebarBtn onClick={() => setConfirm("reset")} label="🗑️ Apagar Tudo" danger disabled={busy} />
-          <SidebarBtn onClick={handleSignOut}    label="🚪 Sair"             disabled={busy} />
+        <div className="px-3 pb-2">
+          <p className="px-3 pb-1.5 text-xs font-medium text-muted">Dados</p>
+          <SidebarBtn icon={FileSpreadsheet} onClick={handleExcelClick} label="Exportar Excel" disabled={busy} />
+          <SidebarBtn icon={Download} onClick={handleJSONClick} label="Fazer backup" disabled={busy} />
+          <SidebarBtn icon={Upload} onClick={handleRestoreClick} label="Restaurar backup" disabled={busy} />
+          <SidebarBtn icon={Trash2} onClick={() => setConfirm("reset")} label="Apagar tudo" danger disabled={busy} />
         </div>
 
-        <div className="px-5 py-3.5 border-t border-white/[.08] text-[11px] text-white/30 truncate">
-          {userEmail}
+        <div className="px-3 py-3 border-t border-border space-y-0.5">
+          <SidebarBtn icon={dark ? Sun : Moon} onClick={toggle} label={dark ? "Modo claro" : "Modo escuro"} />
+          <div className="flex items-center gap-2 pl-3 pr-1 pt-1">
+            <span className="flex-1 min-w-0 text-xs text-muted truncate" title={userEmail}>{userEmail}</span>
+            <button
+              onClick={handleSignOut}
+              disabled={busy}
+              aria-label="Sair"
+              title="Sair"
+              className="size-8 grid place-items-center rounded-lg text-muted hover:text-apptext hover:bg-thead transition-colors disabled:opacity-40"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -99,20 +108,21 @@ export default function Sidebar({ userEmail }: Props) {
 }
 
 function SidebarBtn({
-  onClick, label, danger = false, disabled = false,
+  icon: Icon, onClick, label, danger = false, disabled = false,
 }: {
-  onClick: () => void; label: string; danger?: boolean; disabled?: boolean;
+  icon: LucideIcon; onClick: () => void; label: string; danger?: boolean; disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-1.5 mx-3 px-3 py-[7px] rounded-md text-[12px] font-medium border transition-all w-[calc(100%-24px)] font-sans disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`flex items-center gap-3 w-full px-3 py-2 rounded-xl text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
         danger
-          ? "text-[rgba(255,180,180,.7)] border-[rgba(255,180,180,.2)] hover:bg-[rgba(255,80,80,.1)] hover:text-[#FFB4B4]"
-          : "text-white/60 border-white/15 hover:bg-white/10 hover:text-white"
+          ? "text-danger hover:bg-danger/10"
+          : "text-muted hover:bg-thead hover:text-apptext"
       }`}
     >
+      <Icon size={16} />
       {label}
     </button>
   );

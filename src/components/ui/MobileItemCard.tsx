@@ -1,15 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 export type ChipTone = "ok" | "warn" | "bad" | "info" | "neutral";
 
 export const CHIP_TONES: Record<ChipTone, string> = {
-  ok:      "bg-[#DCFCE7] text-[#15803d] dark:bg-[#1D3B25] dark:text-[#7ED957]",
-  warn:    "bg-[#FEF3C7] text-[#92400e] dark:bg-[#3A311A] dark:text-[#FFD56A]",
-  bad:     "bg-[#FEE2E2] text-[#991b1b] dark:bg-[#42201F] dark:text-[#FF8A8A]",
-  info:    "bg-[#E0E7FF] text-[#3730a3] dark:bg-[#272E52] dark:text-[#A5B4FC]",
-  neutral: "bg-[#E5E7EB] text-[#374151] dark:bg-[#2A3144] dark:text-[#C3C9D6]",
+  ok:      "bg-success-soft text-success-ink",
+  warn:    "bg-warning-soft text-warning-ink",
+  bad:     "bg-danger-soft text-danger-ink",
+  info:    "bg-info-soft text-info-ink",
+  neutral: "bg-thead text-muted",
 };
 
 export function toneForPago(s: string): ChipTone {
@@ -17,13 +18,13 @@ export function toneForPago(s: string): ChipTone {
 }
 
 // Classes compartilhadas dos campos do editor expandido (iguais às das tabelas desktop)
-export const FIELD_CLS = "border-[1.5px] border-border rounded-md px-2 py-2 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors";
-export const FIELD_MONO_CLS = "border-[1.5px] border-border rounded-md px-2 py-2 font-mono text-[13px] text-right bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors";
+export const FIELD_CLS = "border border-border rounded-lg px-3 py-2.5 font-sans text-[15px] bg-bg text-apptext w-full outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 focus:bg-card transition";
+export const FIELD_MONO_CLS = "border border-border rounded-lg px-3 py-2.5 tabular-nums text-[15px] text-right bg-bg text-apptext w-full outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 focus:bg-card transition";
 
 export function CardField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[10px] font-bold text-muted uppercase tracking-[.4px] mb-1">{label}</span>
+      <span className="block text-xs font-medium text-muted mb-1.5">{label}</span>
       {children}
     </label>
   );
@@ -39,7 +40,7 @@ interface Props {
   onChipTap?: () => void;
   onDelete: () => void;
   disableDelete?: boolean; // desativa o swipe-para-excluir (ex: parcelas geradas)
-  badge?: React.ReactNode;  // marcador opcional ao lado do título (ex: 🔗)
+  badge?: React.ReactNode;  // marcador opcional ao lado do título (ex: ícone de vínculo)
   children: React.ReactNode; // editor exibido ao expandir
 }
 
@@ -113,17 +114,17 @@ export default function MobileItemCard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border bg-card">
+    <div className="relative overflow-hidden bg-card">
       {/* Área de excluir, revelada pelo swipe */}
       {!disableDelete && (
         <button
           onClick={onDelete}
           tabIndex={revealed ? 0 : -1}
           aria-hidden={!revealed}
-          className="absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-0.5 bg-vermelho text-white text-[11px] font-semibold"
+          className="absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-1 bg-danger text-white text-xs font-semibold"
           style={{ width: REVEAL_W }}
         >
-          <span className="text-base">🗑️</span>
+          <Trash2 size={18} />
           Excluir
         </button>
       )}
@@ -136,34 +137,34 @@ export default function MobileItemCard({
         style={{ transform: `translateX(${offset}px)`, touchAction: "pan-y" }}
         className={`relative bg-card ${dragging ? "" : "transition-transform duration-200"}`}
       >
-        <div className="flex items-center gap-2.5 px-3.5 py-3" onClick={handleTap}>
+        <div className="flex items-center gap-3 px-4 py-3.5 active:bg-rowhover transition-colors" onClick={handleTap}>
           <div className="flex-1 min-w-0">
-            <div className={`text-[13px] font-semibold truncate flex items-center gap-1 ${title ? "" : "text-muted font-normal italic"}`}>
+            <div className={`text-[15px] font-medium truncate flex items-center gap-1.5 ${title ? "text-apptext" : "text-muted font-normal italic"}`}>
               {badge}
               <span className="truncate">{title || titlePlaceholder}</span>
             </div>
-            {subtitle && <div className="text-[11px] text-muted truncate mt-0.5">{subtitle}</div>}
+            {subtitle && <div className="text-[13px] text-muted truncate mt-0.5">{subtitle}</div>}
           </div>
           {chip && (
             onChipTap ? (
               <button
                 onClick={e => { e.stopPropagation(); onChipTap(); }}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap ${CHIP_TONES[chipTone]}`}
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${CHIP_TONES[chipTone]}`}
               >
                 {chip}
               </button>
             ) : (
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap ${CHIP_TONES[chipTone]}`}>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${CHIP_TONES[chipTone]}`}>
                 {chip}
               </span>
             )
           )}
-          <span className="font-mono text-[13px] font-semibold whitespace-nowrap">{value}</span>
-          <span className={`text-muted text-[10px] transition-transform ${expanded ? "rotate-180" : ""}`}>▼</span>
+          <span className="tabular-nums text-[15px] font-semibold whitespace-nowrap">{value}</span>
+          <ChevronDown size={16} className={`text-muted shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
         </div>
 
         {expanded && (
-          <div className="px-3.5 pb-3.5 pt-2.5 border-t border-border space-y-2.5">
+          <div className="px-4 pb-4 pt-3 border-t border-border bg-thead/40 space-y-3">
             {children}
           </div>
         )}

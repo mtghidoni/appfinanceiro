@@ -1,9 +1,12 @@
 "use client";
 
-import { brl, parseBrl } from "@/lib/utils";
+import { Info, PiggyBank } from "lucide-react";
+import { brl, parseBrl, fmtInput } from "@/lib/utils";
 import { TIPOS_MOV } from "@/lib/constants";
 import type { Movimentacao, TipoMov } from "@/types";
 import MobileItemCard, { CardField, FIELD_CLS, FIELD_MONO_CLS } from "@/components/ui/MobileItemCard";
+import SectionCard, { ColumnHeader, EmptyRow } from "@/components/ui/SectionCard";
+import { CELL_CLS, SELECT_CELL_CLS, NUM_CELL_CLS, ROW_CLS, DeleteButton } from "./cells";
 
 interface Props {
   rows: Movimentacao[];
@@ -12,68 +15,61 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+const COLS = "grid-cols-[2fr_1.2fr_1fr_32px]";
+
 export default function MovimentacoesTable({ rows, onAdd, onUpdate, onDelete }: Props) {
   return (
-    <div>
-      <div className="bg-mov rounded-t-lg px-4 py-2.5 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[.5px]">Movimentações de Reserva</h3>
-        <button onClick={onAdd} className="bg-white/20 hover:bg-white/35 text-white text-xs font-semibold px-2.5 py-1 rounded-md transition-colors">
-          + Adicionar
-        </button>
-      </div>
-      <div className="text-[11px] text-muted italic px-3 py-1.5 bg-[#FFF8E1] dark:bg-amarelo/10 border-l-[3px] border-amarelo">
-        ⚠ Movimentações não entram no cálculo do resultado.
-      </div>
-
+    <SectionCard
+      icon={PiggyBank}
+      tone="neutral"
+      title="Movimentações de reserva"
+      meta={
+        <span className="inline-flex items-center gap-1">
+          <Info size={12} className="shrink-0" />
+          Não entram no cálculo do saldo do mês
+        </span>
+      }
+      onAdd={onAdd}
+    >
       {/* Desktop: tabela */}
-      <div className="hidden md:block bg-card border border-border border-t-0 rounded-b-lg overflow-hidden">
-        <div className="grid grid-cols-[2fr_1.2fr_1fr_32px] bg-thead border-b border-border px-3 py-1.5">
-          {["Descrição","Tipo","Valor (R$)",""].map((h, i) => (
-            <span key={i} className="text-[10px] font-bold text-muted uppercase tracking-[.4px]">{h}</span>
-          ))}
-        </div>
-        {rows.length === 0 && (
-          <div className="px-3 py-4 text-sm text-muted text-center">Nenhuma movimentação.</div>
-        )}
+      <div className="hidden md:block">
+        <ColumnHeader cols={COLS} labels={["Descrição", "Tipo", "Valor", ""]} right={[2]} />
+        {rows.length === 0 && <EmptyRow>Nenhuma movimentação neste mês.</EmptyRow>}
         {rows.map(row => (
-          <div
-            key={row.id}
-            className="grid grid-cols-[2fr_1.2fr_1fr_32px] px-3 py-2 items-center gap-2 border-b border-border last:border-0 odd:bg-card even:bg-roweven hover:bg-rowhover"
-          >
+          <div key={row.id} className={`${ROW_CLS} ${COLS}`}>
             <input
               key={"d" + row.desc}
               type="text"
               placeholder="Descrição"
               defaultValue={row.desc}
               onBlur={e => onUpdate(row.id, "desc", e.target.value)}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors"
+              className={CELL_CLS}
             />
             <select
               key={"t" + row.tipo}
               defaultValue={row.tipo}
               onChange={e => onUpdate(row.id, "tipo", e.target.value as TipoMov)}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent"
+              className={SELECT_CELL_CLS}
             >
               {TIPOS_MOV.map(t => <option key={t}>{t}</option>)}
             </select>
             <input
               key={"v" + row.valor}
               type="text"
+              inputMode="decimal"
               placeholder="0,00"
-              defaultValue={row.valor > 0 ? String(row.valor) : ""}
+              defaultValue={fmtInput(Number(row.valor))}
               onBlur={e => onUpdate(row.id, "valor", parseBrl(e.target.value))}
-              className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-mono text-[13px] text-right bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors"
+              className={NUM_CELL_CLS}
             />
-            <button onClick={() => onDelete(row.id)} className="text-[#ccc] dark:text-[#4A5568] hover:text-vermelho dark:hover:text-vermelho text-sm flex items-center justify-center transition-colors">✕</button>
+            <DeleteButton onClick={() => onDelete(row.id)} />
           </div>
         ))}
       </div>
 
-      {/* Mobile: cards expansíveis com swipe para excluir */}
-      <div className="md:hidden bg-thead border border-border border-t-0 rounded-b-lg p-2 space-y-2">
-        {rows.length === 0 && (
-          <div className="px-3 py-4 text-sm text-muted text-center">Nenhuma movimentação.</div>
-        )}
+      {/* Mobile: lista com itens expansíveis e swipe para excluir */}
+      <div className="md:hidden divide-y divide-border">
+        {rows.length === 0 && <EmptyRow>Nenhuma movimentação neste mês.</EmptyRow>}
         {rows.map(row => (
           <MobileItemCard
             key={row.id}
@@ -108,7 +104,7 @@ export default function MovimentacoesTable({ rows, onAdd, onUpdate, onDelete }: 
                 type="text"
                 inputMode="decimal"
                 placeholder="0,00"
-                defaultValue={row.valor > 0 ? String(row.valor).replace(".", ",") : ""}
+                defaultValue={fmtInput(Number(row.valor))}
                 onBlur={e => onUpdate(row.id, "valor", parseBrl(e.target.value))}
                 className={FIELD_MONO_CLS}
               />
@@ -116,6 +112,6 @@ export default function MovimentacoesTable({ rows, onAdd, onUpdate, onDelete }: 
           </MobileItemCard>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

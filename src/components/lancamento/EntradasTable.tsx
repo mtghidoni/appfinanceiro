@@ -1,9 +1,12 @@
 "use client";
 
-import { brl, parseBrl } from "@/lib/utils";
+import { Link2, Lock, TrendingUp } from "lucide-react";
+import { brl, parseBrl, fmtInput } from "@/lib/utils";
 import { TIPOS_ENT, STATUS_RECEB, TIPO_PARCELAMENTO } from "@/lib/constants";
 import type { Entrada, StatusRecebido } from "@/types";
 import MobileItemCard, { CardField, FIELD_CLS, FIELD_MONO_CLS, toneForPago } from "@/components/ui/MobileItemCard";
+import SectionCard, { ColumnHeader, EmptyRow } from "@/components/ui/SectionCard";
+import { CELL_CLS, SELECT_CELL_CLS, NUM_CELL_CLS, ROW_CLS, statusSelectCls, DeleteButton } from "./cells";
 
 interface Props {
   rows: Entrada[];
@@ -12,12 +15,12 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-const SELECT_CLS = "border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent";
-const INPUT_CLS = "border-[1.5px] border-border rounded-md px-2 py-1.5 font-sans text-[13px] bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors";
-const MONO_CLS = "border-[1.5px] border-border rounded-md px-2 py-1.5 font-mono text-[13px] text-right bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors";
+const COLS = "grid-cols-[1.8fr_1.3fr_.6fr_1fr_.9fr_32px]";
+const LINKED_HINT = "Gerado pelo parcelamento — edite na aba Parcelamentos";
 
 export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props) {
   const subtotal = rows.reduce((s, it) => s + Number(it.valor), 0);
+  const recebidas = rows.filter(r => r.recebido === "OK").length;
 
   function cycleRecebido(row: Entrada) {
     const next = STATUS_RECEB[(STATUS_RECEB.indexOf(row.recebido) + 1) % STATUS_RECEB.length];
@@ -25,60 +28,51 @@ export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props
   }
 
   return (
-    <div>
-      <div className="bg-ent rounded-t-lg px-4 py-2.5 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-white uppercase tracking-[.5px]">Entradas — Receita do Trabalho</h3>
-        <button onClick={onAdd} className="bg-white/20 hover:bg-white/35 text-white text-xs font-semibold px-2.5 py-1 rounded-md transition-colors">
-          + Adicionar
-        </button>
-      </div>
-
+    <SectionCard
+      icon={TrendingUp}
+      tone="income"
+      title="Entradas"
+      meta={rows.length ? `${recebidas} de ${rows.length} recebidas` : "Receita do trabalho"}
+      total={brl(subtotal)}
+      onAdd={onAdd}
+    >
       {/* Desktop: tabela */}
-      <div className="hidden md:block bg-card border border-border border-t-0 rounded-b-lg overflow-hidden">
-        <div className="grid grid-cols-[1.8fr_1.3fr_.7fr_.9fr_.9fr_32px] bg-thead border-b border-border px-3 py-1.5">
-          {["Descrição / Cliente","Tipo","Parcela","Valor (R$)","Recebido?",""].map((h, i) => (
-            <span key={i} className="text-[10px] font-bold text-muted uppercase tracking-[.4px]">{h}</span>
-          ))}
-        </div>
-        {rows.length === 0 && (
-          <div className="px-3 py-4 text-sm text-muted text-center">Nenhuma entrada. Clique em + Adicionar.</div>
-        )}
+      <div className="hidden md:block">
+        <ColumnHeader cols={COLS} labels={["Cliente / descrição", "Tipo", "Parcela", "Valor", "Situação", ""]} right={[3]} />
+        {rows.length === 0 && <EmptyRow>Nenhuma entrada neste mês. Use “Adicionar” para registrar.</EmptyRow>}
         {rows.map(row => {
           const linked = !!row.parcelamento_id;
           return (
-            <div
-              key={row.id}
-              className="grid grid-cols-[1.8fr_1.3fr_.7fr_.9fr_.9fr_32px] px-3 py-2 items-center gap-2 border-b border-border last:border-0 odd:bg-card even:bg-roweven hover:bg-rowhover"
-            >
+            <div key={row.id} className={`${ROW_CLS} ${COLS}`}>
               {linked ? (
-                <span className="flex items-center gap-1.5 text-[13px] truncate" title="Gerado pelo parcelamento — edite na aba Parcelamentos">
-                  <span className="text-fixos">🔗</span>
+                <span className="flex items-center gap-1.5 px-2.5 text-sm truncate" title={LINKED_HINT}>
+                  <Link2 size={14} className="text-brand shrink-0" />
                   <span className="truncate">{row.desc}</span>
                 </span>
               ) : (
                 <input
                   key={"d" + row.desc}
                   type="text"
-                  placeholder="Cliente / Descrição"
+                  placeholder="Cliente / descrição"
                   defaultValue={row.desc}
                   onBlur={e => onUpdate(row.id, "desc", e.target.value)}
-                  className={INPUT_CLS}
+                  className={CELL_CLS}
                 />
               )}
               {linked ? (
-                <span className="text-[13px] text-muted truncate">{row.tipo}</span>
+                <span className="px-2.5 text-sm text-muted truncate">{row.tipo}</span>
               ) : (
                 <select
                   key={"t" + row.tipo}
                   defaultValue={row.tipo}
                   onChange={e => onUpdate(row.id, "tipo", e.target.value)}
-                  className={SELECT_CLS}
+                  className={SELECT_CELL_CLS}
                 >
                   {TIPOS_ENT.map(t => <option key={t}>{t}</option>)}
                 </select>
               )}
               {linked ? (
-                <span className="text-center text-[13px] font-mono">{row.parcela}</span>
+                <span className="text-center text-sm tabular-nums">{row.parcela}</span>
               ) : row.tipo === TIPO_PARCELAMENTO ? (
                 <input
                   key={"pc" + row.parcela}
@@ -86,50 +80,48 @@ export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props
                   placeholder="5/10"
                   defaultValue={row.parcela ?? ""}
                   onBlur={e => onUpdate(row.id, "parcela", e.target.value)}
-                  className="border-[1.5px] border-border rounded-md px-2 py-1.5 font-mono text-[13px] text-center bg-bg text-apptext w-full outline-none focus:border-accent focus:bg-card transition-colors"
+                  className={NUM_CELL_CLS + " !text-center"}
                 />
               ) : (
-                <span className="text-center text-[13px] text-muted/50 select-none">—</span>
+                <span className="text-center text-sm text-muted/60 select-none">—</span>
               )}
               {linked ? (
-                <span className="text-right text-[13px] font-mono">{brl(Number(row.valor))}</span>
+                <span className="px-2.5 text-right text-sm tabular-nums">{brl(Number(row.valor))}</span>
               ) : (
                 <input
                   key={"v" + row.valor}
                   type="text"
+                  inputMode="decimal"
                   placeholder="0,00"
-                  defaultValue={row.valor > 0 ? String(row.valor) : ""}
+                  defaultValue={fmtInput(Number(row.valor))}
                   onBlur={e => onUpdate(row.id, "valor", parseBrl(e.target.value))}
-                  className={MONO_CLS}
+                  className={NUM_CELL_CLS}
                 />
               )}
               <select
                 key={"r" + row.recebido}
                 defaultValue={row.recebido}
                 onChange={e => onUpdate(row.id, "recebido", e.target.value as StatusRecebido)}
-                className={SELECT_CLS}
+                className={statusSelectCls(row.recebido)}
+                aria-label="Situação do recebimento"
               >
                 {STATUS_RECEB.map(s => <option key={s}>{s}</option>)}
               </select>
               {linked ? (
-                <span className="text-[#ccc] dark:text-[#4A5568] text-sm flex items-center justify-center cursor-not-allowed" title="Remova na aba Parcelamentos">🔒</span>
+                <span className="size-8 grid place-items-center text-muted/60 cursor-not-allowed" title="Remova na aba Parcelamentos">
+                  <Lock size={14} />
+                </span>
               ) : (
-                <button onClick={() => onDelete(row.id)} className="text-[#ccc] dark:text-[#4A5568] hover:text-vermelho dark:hover:text-vermelho text-sm flex items-center justify-center transition-colors">✕</button>
+                <DeleteButton onClick={() => onDelete(row.id)} />
               )}
             </div>
           );
         })}
-        <div className="flex justify-between items-center bg-subtotal px-3 py-2 border-t-[1.5px] border-border">
-          <span className="text-xs font-bold text-heading">Subtotal</span>
-          <span className="font-mono text-sm font-bold text-heading">{brl(subtotal)}</span>
-        </div>
       </div>
 
-      {/* Mobile: cards expansíveis com swipe para excluir */}
-      <div className="md:hidden bg-thead border border-border border-t-0 rounded-b-lg p-2 space-y-2">
-        {rows.length === 0 && (
-          <div className="px-3 py-4 text-sm text-muted text-center">Nenhuma entrada. Toque em + Adicionar.</div>
-        )}
+      {/* Mobile: lista com itens expansíveis e swipe para excluir */}
+      <div className="md:hidden divide-y divide-border">
+        {rows.length === 0 && <EmptyRow>Nenhuma entrada neste mês. Toque em + para registrar.</EmptyRow>}
         {rows.map(row => {
           const linked = !!row.parcelamento_id;
           const isParc = row.tipo === TIPO_PARCELAMENTO;
@@ -148,18 +140,19 @@ export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props
               onChipTap={() => cycleRecebido(row)}
               onDelete={() => onDelete(row.id)}
               disableDelete={linked}
-              badge={linked ? <span className="text-fixos" title="Gerado por parcelamento">🔗</span> : undefined}
+              badge={linked ? <Link2 size={14} className="text-brand shrink-0" aria-label="Gerado por parcelamento" /> : undefined}
             >
               {linked ? (
                 <>
-                  <div className="text-[11px] text-muted bg-bg rounded-md px-2.5 py-2 leading-relaxed">
-                    🔗 Parcela gerada automaticamente pelo parcelamento. Para alterar valor, descrição ou nº de parcelas, edite na aba <strong>Parcelamentos</strong>.
+                  <div className="flex gap-2 text-[13px] text-muted bg-card border border-border rounded-lg px-3 py-2.5 leading-relaxed">
+                    <Link2 size={15} className="text-brand shrink-0 mt-0.5" />
+                    <span>Parcela gerada automaticamente pelo parcelamento. Para alterar valor, descrição ou nº de parcelas, edite na aba <strong className="text-apptext font-semibold">Parcelamentos</strong>.</span>
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <CardStat label="Parcela" value={row.parcela} />
                     <CardStat label="Valor" value={brl(Number(row.valor))} />
                   </div>
-                  <CardField label="Recebido?">
+                  <CardField label="Situação">
                     <select
                       key={"r" + row.recebido}
                       defaultValue={row.recebido}
@@ -172,11 +165,11 @@ export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props
                 </>
               ) : (
                 <>
-                  <CardField label="Descrição / Cliente">
+                  <CardField label="Cliente / descrição">
                     <input
                       key={"d" + row.desc}
                       type="text"
-                      placeholder="Cliente / Descrição"
+                      placeholder="Cliente / descrição"
                       defaultValue={row.desc}
                       onBlur={e => onUpdate(row.id, "desc", e.target.value)}
                       className={FIELD_CLS}
@@ -210,12 +203,12 @@ export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props
                       type="text"
                       inputMode="decimal"
                       placeholder="0,00"
-                      defaultValue={row.valor > 0 ? String(row.valor).replace(".", ",") : ""}
+                      defaultValue={fmtInput(Number(row.valor))}
                       onBlur={e => onUpdate(row.id, "valor", parseBrl(e.target.value))}
                       className={FIELD_MONO_CLS}
                     />
                   </CardField>
-                  <CardField label="Recebido?">
+                  <CardField label="Situação">
                     <select
                       key={"r" + row.recebido}
                       defaultValue={row.recebido}
@@ -230,20 +223,16 @@ export default function EntradasTable({ rows, onAdd, onUpdate, onDelete }: Props
             </MobileItemCard>
           );
         })}
-        <div className="flex justify-between items-center bg-subtotal rounded-lg px-3.5 py-2.5">
-          <span className="text-xs font-bold text-heading">Subtotal</span>
-          <span className="font-mono text-sm font-bold text-heading">{brl(subtotal)}</span>
-        </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
 function CardStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[11px] text-muted">{label}</span>
-      <span className="font-mono text-[12px] font-semibold">{value}</span>
+      <span className="text-[13px] text-muted">{label}</span>
+      <span className="tabular-nums text-sm font-semibold">{value}</span>
     </div>
   );
 }

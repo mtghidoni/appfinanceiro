@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { MESES } from "@/lib/constants";
-import { brl } from "@/lib/utils";
 import { useLancamento } from "@/hooks/useLancamento";
+import MonthStepper from "@/components/ui/MonthStepper";
+import { Skeleton, SectionSkeleton } from "@/components/ui/Skeleton";
+import MonthSummary from "./MonthSummary";
 import GastosFixosTable from "./GastosFixosTable";
 import GastosVariadosTable from "./GastosVariadosTable";
 import EntradasTable from "./EntradasTable";
 import MovimentacoesTable from "./MovimentacoesTable";
+
+const sum = (rows: { valor: number }[]) => rows.reduce((s, it) => s + Number(it.valor), 0);
 
 export default function LancamentoScreen() {
   const now = new Date();
@@ -22,72 +26,50 @@ export default function LancamentoScreen() {
     movs, addMov, updateMov, deleteMov,
   } = useLancamento(mes, ano);
 
-  const totalReceita = entradas.reduce((s, it) => s + Number(it.valor), 0);
-  const totalGastos = [...fixos, ...variados].reduce((s, it) => s + Number(it.valor), 0);
-  const resultado = totalReceita - totalGastos;
-  const positive = resultado >= 0;
-
-  const curAno = now.getFullYear();
-  const anos = Array.from({ length: 8 }, (_, i) => curAno - 3 + i);
+  const gastos = [...fixos, ...variados];
+  const totalReceita = sum(entradas);
+  const totalRecebido = sum(entradas.filter(e => e.recebido === "OK"));
+  const totalGastos = sum(gastos);
+  const totalPago = sum(gastos.filter(g => g.pago === "OK"));
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
-        <div className="bg-card border-b border-border px-4 md:px-6 h-[60px] flex items-center justify-between gap-2 flex-shrink-0">
-          <h1 className="text-[15px] md:text-[17px] font-bold text-heading">Lançamento Mensal</h1>
-          <div className="flex items-center gap-2 md:gap-2.5">
-            <select
-              value={mes}
-              onChange={e => setMes(e.target.value)}
-              className="border-[1.5px] border-border rounded-lg px-2.5 py-1.5 font-sans text-[13px] font-medium bg-bg text-apptext cursor-pointer outline-none focus:border-accent"
-            >
-              {MESES.map(m => <option key={m}>{m}</option>)}
-            </select>
-            <select
-              value={ano}
-              onChange={e => setAno(parseInt(e.target.value))}
-              className="border-[1.5px] border-border rounded-lg px-2.5 py-1.5 font-sans text-[13px] font-medium bg-bg text-apptext cursor-pointer outline-none focus:border-accent"
-            >
-              {anos.map(y => <option key={y}>{y}</option>)}
-            </select>
-          </div>
-        </div>
+      {/* Header */}
+      <header className="bg-card border-b border-border px-3 md:px-8 h-16 flex items-center justify-center sm:justify-between gap-2 flex-shrink-0">
+        <h1 className="hidden sm:block text-lg font-semibold text-heading">Lançamentos</h1>
+        <MonthStepper mes={mes} ano={ano} onChange={(m, a) => { setMes(m); setAno(a); }} />
+      </header>
 
-        {/* Summary Bar */}
-        <div className="bg-card border-b border-border px-4 md:px-6 py-3 flex gap-2 md:gap-3 flex-shrink-0 flex-wrap">
-          <SumCard label="Receita Real" value={brl(totalReceita)} color="bg-ent" />
-          <SumCard label="Total Gastos" value={brl(totalGastos)} color="bg-var" />
-          <SumCard
-            label="Resultado"
-            value={brl(resultado)}
-            color={positive ? "bg-[#2d6a1f]" : "bg-vermelho"}
-          />
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-8 scrollbar-thin">
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin">
+        <div className="max-w-5xl mx-auto px-3 md:px-8 py-4 md:py-6 pb-10 space-y-4 md:space-y-5">
           {loading ? (
-            <div className="flex items-center justify-center h-40 text-muted text-sm">
-              Carregando…
-            </div>
+            <>
+              <div className="bg-card border border-border rounded-2xl p-5 md:p-6 grid gap-6 md:grid-cols-2">
+                <div className="space-y-3">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-10 w-56" />
+                  <Skeleton className="h-3.5 w-64" />
+                </div>
+                <div className="space-y-5">
+                  <Skeleton className="h-2.5 w-full" />
+                  <Skeleton className="h-2.5 w-full" />
+                </div>
+              </div>
+              <SectionSkeleton rows={5} />
+              <SectionSkeleton rows={3} />
+            </>
           ) : (
-            <div className="space-y-5">
+            <>
+              <MonthSummary receita={totalReceita} recebido={totalRecebido} gastos={totalGastos} pago={totalPago} />
+              <EntradasTable rows={entradas} onAdd={addEntrada} onUpdate={updateEntrada} onDelete={deleteEntrada} />
               <GastosFixosTable rows={fixos} onAdd={addFixo} onUpdate={updateFixo} onDelete={deleteFixo} />
               <GastosVariadosTable rows={variados} onAdd={addVariado} onUpdate={updateVariado} onDelete={deleteVariado} />
-              <EntradasTable rows={entradas} onAdd={addEntrada} onUpdate={updateEntrada} onDelete={deleteEntrada} />
               <MovimentacoesTable rows={movs} onAdd={addMov} onUpdate={updateMov} onDelete={deleteMov} />
-            </div>
+            </>
           )}
         </div>
-    </div>
-  );
-}
-
-function SumCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className={`flex-1 min-w-[140px] rounded-xl px-3.5 py-2.5 flex flex-col gap-1 ${color}`}>
-      <span className="text-[11px] text-white/80 font-medium">{label}</span>
-      <span className="text-lg font-bold text-white font-mono">{value}</span>
+      </div>
     </div>
   );
 }
