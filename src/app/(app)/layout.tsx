@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Sidebar userEmail={user.email ?? ""} />
         <main className="flex-1 flex flex-col overflow-hidden">
           {children}
-          <MobileTabs userEmail={user.email ?? ""} />
+          <MobileTabs />
         </main>
       </div>
     </ToastProvider>
