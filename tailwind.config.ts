@@ -29,6 +29,7 @@ const config: Config = {
         brand:    token("brand"),
         accent:   token("brand"),
         onbrand:  token("on-brand"),
+        "brand-inverse": token("brand-inverse"),
         // Papéis semânticos
         income:   token("income"),
         expense:  token("expense"),
@@ -42,6 +43,16 @@ const config: Config = {
         "danger-ink":   token("danger-ink"),
         "info-soft":    token("info-soft"),
         "info-ink":     token("info-ink"),
+      },
+      keyframes: {
+        "sheet-in": { from: { transform: "translateY(100%)" }, to: { transform: "translateY(0)" } },
+        "pop-in":   { from: { opacity: "0", transform: "translateY(8px) scale(.98)" }, to: { opacity: "1", transform: "none" } },
+        "fade-in":  { from: { opacity: "0" }, to: { opacity: "1" } },
+      },
+      animation: {
+        "sheet-in": "sheet-in .38s cubic-bezier(.22,1,.36,1)",
+        "pop-in":   "pop-in .24s cubic-bezier(.22,1,.36,1)",
+        "fade-in":  "fade-in .2s ease-out",
       },
       zIndex: {
         sticky: "10",
