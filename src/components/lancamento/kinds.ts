@@ -1,7 +1,7 @@
 import {
   CATS_FIXOS, CATS_VAR, STATUS_PAGO, STATUS_RECEB, TIPOS_ENT, TIPOS_MOV,
 } from "@/lib/constants";
-import type { ChipTone } from "@/components/ui/MobileItemCard";
+import type { ChipTone } from "@/components/ui/chips";
 import type { Tone } from "@/components/ui/SectionCard";
 
 export type Kind = "entrada" | "fixo" | "variado" | "mov";

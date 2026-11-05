@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Check, Trash2, type LucideIcon } from "lucide-react";
-import { CHIP_TONES, type ChipTone } from "@/components/ui/MobileItemCard";
+import { CHIP_TONES, type ChipTone } from "@/components/ui/chips";
 import { TONE_CHIP, type Tone } from "@/components/ui/SectionCard";
 
 interface Props {
@@ -14,7 +14,8 @@ interface Props {
   value: string;
   muted?: boolean;          // valor zerado / item sem efeito
   badge?: React.ReactNode;  // marcador ao lado do título
-  status?: { label: string; tone: ChipTone; done: boolean; onToggle: () => void; hint: string };
+  status?: { label: string; tone: ChipTone; done: boolean; onToggle?: () => void; hint?: string };
+  progress?: { pct: number; barClass: string; label: string }; // barra fina sob o subtítulo
   onOpen: () => void;
   onDelete?: () => void;    // ausente: sem swipe-para-excluir
 }
@@ -27,7 +28,7 @@ const REVEAL_W = 88;
  */
 export default function ItemRow({
   icon: Icon, tone, title, titlePlaceholder = "Sem descrição", subtitle, value, muted,
-  badge, status, onOpen, onDelete,
+  badge, status, progress, onOpen, onDelete,
 }: Props) {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -116,18 +117,26 @@ export default function ItemRow({
               <span className="truncate">{title || titlePlaceholder}</span>
             </div>
             {subtitle && <div className="text-[13px] text-muted truncate mt-0.5">{subtitle}</div>}
+            {progress && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-1 mt-2">
+                <div className="w-full sm:max-w-[220px] h-1.5 rounded-full bg-thead overflow-hidden">
+                  <div className={`h-full rounded-full ${progress.barClass}`} style={{ width: `${Math.min(100, progress.pct)}%` }} />
+                </div>
+                <span className="text-xs text-muted tabular-nums whitespace-nowrap">{progress.label}</span>
+              </div>
+            )}
           </div>
 
           <div className="pointer-events-none flex flex-col items-end gap-1 shrink-0">
             <span className={`tabular-nums text-[15px] font-semibold whitespace-nowrap ${muted ? "text-muted" : "text-apptext"}`}>
               {value}
             </span>
-            {status && (
+            {status && (status.onToggle ? (
               <button
                 type="button"
-                onClick={e => { e.stopPropagation(); status.onToggle(); }}
+                onClick={e => { e.stopPropagation(); status.onToggle?.(); }}
                 title={status.hint}
-                aria-label={`${status.label} — ${status.hint}`}
+                aria-label={`${status.label} — ${status.hint ?? ""}`}
                 className={`pointer-events-auto relative inline-flex items-center gap-1 rounded-full pl-1.5 pr-2.5 py-0.5 text-xs font-semibold whitespace-nowrap active:scale-95 transition ${CHIP_TONES[status.tone]}`}
               >
                 <span className={`size-3.5 grid place-items-center rounded-full ${status.done ? "bg-current" : "border-[1.5px] border-current"}`}>
@@ -135,7 +144,11 @@ export default function ItemRow({
                 </span>
                 {status.label}
               </button>
-            )}
+            ) : (
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${CHIP_TONES[status.tone]}`}>
+                {status.label}
+              </span>
+            ))}
           </div>
         </div>
       </div>

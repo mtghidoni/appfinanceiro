@@ -6,7 +6,7 @@ import Modal from "@/components/ui/Modal";
 import { TIPO_PARCELAMENTO } from "@/lib/constants";
 import { brl, fmtInput, parseBrl } from "@/lib/utils";
 import { iconFor } from "@/lib/icons";
-import { CHIP_TONES } from "@/components/ui/MobileItemCard";
+import { CHIP_TONES } from "@/components/ui/chips";
 import { KINDS, statusLabel, statusTone, type Kind } from "./kinds";
 
 /** Campos editáveis comuns às quatro tabelas mensais. */
