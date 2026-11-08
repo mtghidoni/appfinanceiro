@@ -4,6 +4,7 @@ import {
   ChevronRight, Download, FileSpreadsheet, LogOut, Moon, Sun, SunMoon, Trash2, Upload, type LucideIcon,
 } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import FamiliaGroup from "./FamiliaGroup";
 import { useDataControls } from "@/hooks/useDataControls";
 import { useTheme, type ThemeMode } from "@/hooks/useTheme";
 
@@ -42,6 +43,8 @@ export default function ConfiguracoesScreen({ userEmail }: { userEmail: string }
             <Row icon={LogOut} label="Sair" onClick={handleSignOut} disabled={busy} />
           </Group>
 
+          <FamiliaGroup />
+
           <Group title="Aparência">
             <div className="px-4 py-3.5">
               <p className="text-[15px] font-medium mb-2.5">Tema</p>
@@ -64,14 +67,14 @@ export default function ConfiguracoesScreen({ userEmail }: { userEmail: string }
             </div>
           </Group>
 
-          <Group title="Dados" footer="O backup guarda todos os lançamentos e parcelamentos num arquivo .json que pode ser restaurado depois.">
+          <Group title="Dados" footer="O backup guarda lançamentos, parcelamentos, contas e transações num arquivo .json. Em família, restaurar e apagar mexem só nos dados criados por você.">
             <Row icon={FileSpreadsheet} label="Exportar para Excel" hint="Planilha com todos os meses" onClick={handleExcelClick} disabled={busy} />
             <Row icon={Download} label="Fazer backup" hint="Baixa um arquivo .json" onClick={handleJSONClick} disabled={busy} />
             <Row icon={Upload} label="Restaurar backup" hint="Substitui os dados atuais pelos do arquivo" onClick={handleRestoreClick} disabled={busy} />
           </Group>
 
           <Group title="Zona de perigo">
-            <Row icon={Trash2} label="Apagar todos os dados" hint="Lançamentos e parcelamentos, sem volta" onClick={() => setConfirm("reset")} danger disabled={busy} />
+            <Row icon={Trash2} label="Apagar todos os dados" hint="Os seus lançamentos, parcelamentos e contas, sem volta" onClick={() => setConfirm("reset")} danger disabled={busy} />
           </Group>
         </div>
       </div>
@@ -80,14 +83,14 @@ export default function ConfiguracoesScreen({ userEmail }: { userEmail: string }
       <ConfirmModal
         open={confirm === "restore"}
         title="Restaurar backup?"
-        message="Todos os dados atuais serão substituídos pelos dados do arquivo. Esta ação não pode ser desfeita."
+        message="Os seus dados atuais serão substituídos pelos dados do arquivo. Esta ação não pode ser desfeita."
         onConfirm={handleConfirm}
         onCancel={cancelConfirm}
       />
       <ConfirmModal
         open={confirm === "reset"}
         title="Apagar todos os dados?"
-        message="Todos os lançamentos e parcelamentos serão apagados permanentemente. Faça um backup antes."
+        message="Seus lançamentos, parcelamentos, contas e transações serão apagados permanentemente. Os dados criados por outros membros da família não são afetados. Faça um backup antes."
         onConfirm={handleConfirm}
         onCancel={cancelConfirm}
       />

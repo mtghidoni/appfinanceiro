@@ -38,3 +38,24 @@ export const FIXOS_PADRAO = [
   { desc: "Inglês",           cat: "Educação",     valor: 0, pago: "Pendente" },
   { desc: "Personal / Academia", cat: "Saúde",     valor: 0, pago: "Pendente" },
 ] as const;
+
+// --- Contas ---
+export const TIPOS_CONTA = [
+  { v: "corrente",     label: "Conta corrente" },
+  { v: "poupanca",     label: "Poupança" },
+  { v: "cartao",       label: "Cartão de crédito" },
+  { v: "investimento", label: "Investimento" },
+  { v: "carteira",     label: "Dinheiro" },
+  { v: "outro",        label: "Outra" },
+] as const;
+
+// Categoria que não conta como receita nem gasto (dinheiro mudando de conta, pagamento de fatura).
+export const CAT_TRANSFERENCIA = "Transferência";
+
+// Categorias das transações: as de gastos do app + as de receita.
+export const CATS_TRANSACAO = [
+  "Alimentação","Mercado","Moradia","Transporte","Saúde","Educação","Lazer","Vestuário",
+  "Beleza","Casa","Assinaturas","Profissional","Impostos e taxas",
+  "Salário","Honorários","Rendimentos","Reembolso",
+  CAT_TRANSFERENCIA,"Outros",
+];

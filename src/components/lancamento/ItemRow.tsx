@@ -13,6 +13,7 @@ interface Props {
   subtitle?: string;
   value: string;
   muted?: boolean;          // valor zerado / item sem efeito
+  valueClass?: string;      // cor do valor (ex: verde para entradas)
   badge?: React.ReactNode;  // marcador ao lado do título
   status?: { label: string; tone: ChipTone; done: boolean; onToggle?: () => void; hint?: string };
   progress?: { pct: number; barClass: string; label: string }; // barra fina sob o subtítulo
@@ -28,7 +29,7 @@ const REVEAL_W = 88;
  */
 export default function ItemRow({
   icon: Icon, tone, title, titlePlaceholder = "Sem descrição", subtitle, value, muted,
-  badge, status, progress, onOpen, onDelete,
+  badge, status, progress, onOpen, onDelete, valueClass,
 }: Props) {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -128,7 +129,7 @@ export default function ItemRow({
           </div>
 
           <div className="pointer-events-none flex flex-col items-end gap-1 shrink-0">
-            <span className={`tabular-nums text-[15px] font-semibold whitespace-nowrap ${muted ? "text-muted" : "text-apptext"}`}>
+            <span className={`tabular-nums text-[15px] font-semibold whitespace-nowrap ${muted ? "text-muted" : valueClass ?? "text-apptext"}`}>
               {value}
             </span>
             {status && (status.onToggle ? (

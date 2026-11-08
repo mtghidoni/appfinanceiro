@@ -8,25 +8,38 @@ import { mesLabel } from "@/lib/utils";
 export function useExportImport() {
   const supabase = createClient();
 
+  type Linha = Record<string, unknown>;
+
+  // O Supabase devolve no máximo 1000 linhas por consulta; busca em páginas.
+  // Tabela inexistente (migração da fase 1 não rodada) vira lista vazia.
+  async function todas(table: string, order: string[]): Promise<Linha[]> {
+    const out: Linha[] = [];
+    for (let from = 0; ; from += 1000) {
+      let q = supabase.from(table).select("*");
+      for (const col of order) q = q.order(col);
+      const { data, error } = await q.order("id").range(from, from + 999);
+      if (error) break;
+      out.push(...((data as Linha[]) ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    return out;
+  }
+
   async function fetchAll() {
-    const [fx, vr, en, mv, pr] = await Promise.all([
-      supabase.from("gastos_fixos").select("*").order("mes_ano").order("ordem"),
-      supabase.from("gastos_variados").select("*").order("mes_ano").order("ordem"),
-      supabase.from("entradas").select("*").order("mes_ano").order("ordem"),
-      supabase.from("movimentacoes").select("*").order("mes_ano").order("ordem"),
-      supabase.from("parcelamentos").select("*").order("created_at"),
+    const [fixos, variados, entradas, movs, parcelas, contas, transacoes] = await Promise.all([
+      todas("gastos_fixos", ["mes_ano", "ordem"]),
+      todas("gastos_variados", ["mes_ano", "ordem"]),
+      todas("entradas", ["mes_ano", "ordem"]),
+      todas("movimentacoes", ["mes_ano", "ordem"]),
+      todas("parcelamentos", ["created_at"]),
+      todas("contas", ["ordem", "created_at"]),
+      todas("transacoes", ["data"]),
     ]);
-    return {
-      fixos:    (fx.data ?? []) as Record<string, unknown>[],
-      variados: (vr.data ?? []) as Record<string, unknown>[],
-      entradas: (en.data ?? []) as Record<string, unknown>[],
-      movs:     (mv.data ?? []) as Record<string, unknown>[],
-      parcelas: (pr.data ?? []) as Record<string, unknown>[],
-    };
+    return { fixos, variados, entradas, movs, parcelas, contas, transacoes };
   }
 
   async function exportarExcel() {
-    const { fixos, variados, entradas, movs, parcelas } = await fetchAll();
+    const { fixos, variados, entradas, movs, parcelas, contas, transacoes } = await fetchAll();
     const wb = XLSX.utils.book_new();
 
     const mesSet = new Set([
@@ -98,12 +111,26 @@ export function useExportImport() {
     wp["!cols"] = [{wch:22},{wch:22},{wch:11},{wch:14},{wch:10},{wch:10},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14}];
     XLSX.utils.book_append_sheet(wb, wp, "PARCELAMENTOS");
 
+    // Transações das contas
+    if (transacoes.length) {
+      const nomeConta = new Map(contas.map(c => [c.id as string, c.nome as string]));
+      const tRows: unknown[][] = [["TRANSAÇÕES"], []];
+      tRows.push(["Data", "Conta", "Descrição", "Categoria", "Valor (R$)", "Observação"]);
+      transacoes.forEach(t => {
+        const [y, m, d] = String(t.data).split("-");
+        tRows.push([`${d}/${m}/${y}`, nomeConta.get(t.conta_id as string) ?? "", t.descricao, t.categoria, Number(t.valor), t.observacao ?? ""]);
+      });
+      const wt = XLSX.utils.aoa_to_sheet(tRows);
+      wt["!cols"] = [{wch:11},{wch:20},{wch:40},{wch:16},{wch:14},{wch:24}];
+      XLSX.utils.book_append_sheet(wb, wt, "TRANSAÇÕES");
+    }
+
     XLSX.writeFile(wb, `Controle_Financeiro_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   async function exportarJSON() {
     const all = await fetchAll();
-    const backup = { version: 2, exportado_em: new Date().toISOString(), ...all };
+    const backup = { version: 3, exportado_em: new Date().toISOString(), ...all };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -123,13 +150,17 @@ export function useExportImport() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Usuário não autenticado");
 
-    await Promise.all([
-      supabase.from("gastos_fixos").delete().eq("user_id", user.id),
-      supabase.from("gastos_variados").delete().eq("user_id", user.id),
-      supabase.from("entradas").delete().eq("user_id", user.id),
-      supabase.from("movimentacoes").delete().eq("user_id", user.id),
-      supabase.from("parcelamentos").delete().eq("user_id", user.id),
-    ]);
+    // Backup feito em família traz dados de mais de uma pessoa: restaura só os seus.
+    const listas: Linha[][] = [backup.fixos, backup.variados, backup.entradas, backup.movs, backup.parcelas,
+      backup.contas ?? [], backup.transacoes ?? []];
+    const donos = new Set(listas.flat().map(r => r.user_id).filter(Boolean));
+    const meus = (rows: Linha[] = []) => (donos.size > 1 ? rows.filter(r => r.user_id === user.id) : rows);
+    const contas = meus(backup.contas);
+    const idsContas = new Set(contas.map(c => c.id));
+    // Transações seguem a conta: entram as das contas restauradas, de quem quer que as tenha lançado.
+    const transacoes = ((backup.transacoes ?? []) as Linha[]).filter(t => idsContas.has(t.conta_id));
+
+    await apagarTudo();
 
     const remap = (rows: Record<string, unknown>[]) =>
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -144,17 +175,24 @@ export function useExportImport() {
         ...rest, user_id: user.id,
       }));
 
-    // 1) Parcelamentos primeiro (as entradas têm FK para eles).
-    if (backup.parcelas.length) {
-      await supabase.from("parcelamentos").insert(remapParc(backup.parcelas));
-    }
+    const fixos = meus(backup.fixos), variados = meus(backup.variados), entradas = meus(backup.entradas);
+    const movs = meus(backup.movs), parcelas = meus(backup.parcelas);
+
+    // 1) Parcelamentos e contas primeiro (entradas e transações têm FK para eles); mantêm o id.
+    const check = (r: { error: { message: string } | null }) => { if (r.error) throw new Error(r.error.message); };
+    if (parcelas.length) check(await supabase.from("parcelamentos").insert(remapParc(parcelas)));
+    if (contas.length) check(await supabase.from("contas").insert(remapParc(contas)));
     // 2) Demais tabelas. As entradas mantêm parcelamento_id/parcela_num do backup.
-    await Promise.all([
-      backup.fixos.length    && supabase.from("gastos_fixos").insert(remap(backup.fixos)),
-      backup.variados.length && supabase.from("gastos_variados").insert(remap(backup.variados)),
-      backup.entradas.length && supabase.from("entradas").insert(remap(backup.entradas)),
-      backup.movs.length     && supabase.from("movimentacoes").insert(remap(backup.movs)),
+    const res = await Promise.all([
+      fixos.length    ? supabase.from("gastos_fixos").insert(remap(fixos)) : null,
+      variados.length ? supabase.from("gastos_variados").insert(remap(variados)) : null,
+      entradas.length ? supabase.from("entradas").insert(remap(entradas)) : null,
+      movs.length     ? supabase.from("movimentacoes").insert(remap(movs)) : null,
     ]);
+    res.forEach(r => r && check(r));
+    for (let i = 0; i < transacoes.length; i += 500) {
+      check(await supabase.from("transacoes").insert(remap(transacoes.slice(i, i + 500))));
+    }
   }
 
   async function apagarTudo() {
@@ -166,6 +204,9 @@ export function useExportImport() {
       supabase.from("entradas").delete().eq("user_id", user.id),
       supabase.from("movimentacoes").delete().eq("user_id", user.id),
       supabase.from("parcelamentos").delete().eq("user_id", user.id),
+      // Apagar a conta apaga as transações dela (ON DELETE CASCADE).
+      supabase.from("transacoes").delete().eq("user_id", user.id),
+      supabase.from("contas").delete().eq("user_id", user.id),
     ]);
   }
 
