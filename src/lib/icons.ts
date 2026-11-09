@@ -1,8 +1,10 @@
 import {
-  ArrowDownToLine, ArrowUpFromLine, Briefcase, Building2, Car, CircleEllipsis, Footprints,
-  GraduationCap, HandCoins, HeartPulse, House, Layers, PartyPopper, Scale, Shirt, Sofa,
-  Sparkles, UtensilsCrossed, type LucideIcon,
+  ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Banknote, Briefcase, Building2, Car, ChartLine,
+  CircleEllipsis, CreditCard, Footprints, GraduationCap, HandCoins, HeartPulse, House, Landmark,
+  Layers, PartyPopper, PiggyBank, ReceiptText, Repeat, Scale, Shirt, ShoppingCart, Sofa, Sparkles,
+  Undo2, UtensilsCrossed, Wallet, type LucideIcon,
 } from "lucide-react";
+import type { TipoConta } from "@/types";
 
 // Ícone de cada categoria/tipo usado nas listas e no editor.
 const ICONS: Record<string, LucideIcon> = {
@@ -17,6 +19,15 @@ const ICONS: Record<string, LucideIcon> = {
   "Vestuário": Shirt,
   "Lazer": PartyPopper,
   "Casa": Sofa,
+  "Mercado": ShoppingCart,
+  "Assinaturas": Repeat,
+  "Impostos e taxas": ReceiptText,
+  // Categorias de receita das transações
+  "Salário": Wallet,
+  "Honorários": Scale,
+  "Rendimentos": ChartLine,
+  "Reembolso": Undo2,
+  "Transferência": ArrowLeftRight,
   // Tipos de entrada
   "Honorário – processo": Scale,
   "Diligência": Footprints,
@@ -30,4 +41,17 @@ const ICONS: Record<string, LucideIcon> = {
 
 export function iconFor(name: string): LucideIcon {
   return ICONS[name] ?? CircleEllipsis;
+}
+
+const ICONS_CONTA: Record<TipoConta, LucideIcon> = {
+  corrente: Landmark,
+  poupanca: PiggyBank,
+  cartao: CreditCard,
+  investimento: ChartLine,
+  carteira: Banknote,
+  outro: CircleEllipsis,
+};
+
+export function iconForConta(tipo: TipoConta): LucideIcon {
+  return ICONS_CONTA[tipo] ?? CircleEllipsis;
 }

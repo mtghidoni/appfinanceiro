@@ -1,4 +1,5 @@
 -- Enable RLS on all tables. Run this in the Supabase SQL editor.
+-- Depois rode também supabase/fase1_familia_contas.sql (família, contas e transações).
 
 CREATE TABLE IF NOT EXISTS gastos_fixos (
   id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
