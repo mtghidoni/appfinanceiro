@@ -34,3 +34,23 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Conexão com bancos (Pluggy / Open Finance)
+
+O app busca contas, saldos e transações direto do banco usando a [Pluggy](https://pluggy.ai).
+
+1. **Banco de dados** — no SQL Editor do Supabase, rode `supabase/fase2_pluggy.sql` (depois do `fase1_familia_contas.sql`).
+2. **Credenciais** — no painel da Pluggy (Applications), copie o *Client ID* e o *Client Secret* e defina:
+   - `PLUGGY_CLIENT_ID`
+   - `PLUGGY_CLIENT_SECRET`
+   - `NEXT_PUBLIC_PLUGGY_SANDBOX=true` (opcional, para testar com o banco fictício "Pluggy Bank")
+
+   No `.env.local` para rodar localmente e em *Vercel → Settings → Environment Variables* para produção (depois, faça um novo deploy).
+   O Client Secret fica só no servidor: nunca use o prefixo `NEXT_PUBLIC_` nele.
+3. **Usar** — em *Contas*, toque em **Conectar banco**, escolha o banco e autorize. As contas aparecem como "automática" e
+   são sincronizadas ao abrir a tela (se a última vez foi há mais de 6 h) ou pelo botão de sincronizar.
+
+Como funciona: o navegador nunca vê o Client Secret; ele pede um *connect token* de curta duração para
+`/api/pluggy/connect-token` e abre o widget da Pluggy. Ao terminar, `/api/pluggy/itens` registra a conexão
+(conferindo que ela foi criada pelo usuário logado) e importa os dados com as mesmas regras de categorização
+da importação de extratos. Desconectar mantém as contas e o histórico, como contas manuais.

@@ -100,9 +100,23 @@ export interface Conta {
   arquivada: boolean;
   origem: "manual" | "pluggy";
   external_id: string | null;
+  pluggy_item_id?: string | null; // conexão Pluggy de origem (fase 2)
   ordem: number;
   created_at: string;
   updated_at: string;
+}
+
+/** Banco conectado pela Pluggy (tabela pluggy_itens). */
+export interface PluggyItem {
+  id: string;
+  user_id: string;
+  item_id: string;
+  conector: string;
+  conector_logo: string | null;
+  status: string;      // UPDATED, UPDATING, LOGIN_ERROR, OUTDATED, WAITING_USER_ACTION...
+  erro: string | null;
+  ultima_sync: string | null;
+  created_at: string;
 }
 
 /** Linha da view contas_saldo: a conta com o saldo calculado. */

@@ -200,5 +200,6 @@ export function useContas(mes: string, ano: number) {
     salvarConta, excluirConta,
     criarTransacao, salvarTransacao, excluirTransacao, restaurarTransacao,
     prepararImportacao, importar,
+    recarregar: () => Promise.all([loadContas(), loadMes()]),
   };
 }
