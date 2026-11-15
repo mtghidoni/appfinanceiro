@@ -52,7 +52,7 @@ O app busca contas, saldos e transações direto do banco usando a [Pluggy](http
 
 4. **Webhook (opcional, recomendado)** — para os dados chegarem sem abrir o app, cadastre no painel da Pluggy
    o webhook `https://SEU-DOMINIO/api/webhooks/pluggy` (evento `all`) e defina na Vercel:
-   - `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API Keys → service_role)
+   - `SUPABASE_SECRET_KEY` (Supabase → Project Settings → API Keys → Secret keys, a que começa com `sb_secret_`)
    - `PLUGGY_WEBHOOK_SECRET` (opcional): um valor aleatório; no cadastro do webhook, adicione o header
      `x-webhook-secret` com o mesmo valor.
 
