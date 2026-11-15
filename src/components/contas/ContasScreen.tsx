@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react";
 import {
   ArchiveRestore, ArrowDownLeft, ArrowUpRight, ChartLine, CreditCard, Database, FileUp, Landmark,
-  Plus, ReceiptText, Wallet,
+  Plug, Plus, ReceiptText, Wallet,
 } from "lucide-react";
 import { CAT_TRANSFERENCIA, MESES, TIPOS_CONTA } from "@/lib/constants";
 import { brl } from "@/lib/utils";
 import { iconFor, iconForConta } from "@/lib/icons";
 import { useContas, type DadosConta, type LinhaCategorizada, type NovaTransacao } from "@/hooks/useContas";
 import { useFamilia } from "@/hooks/useFamilia";
+import { usePluggy } from "@/hooks/usePluggy";
+import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/components/ui/Toast";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import MonthStepper from "@/components/ui/MonthStepper";
@@ -18,10 +20,11 @@ import StatCard from "@/components/ui/StatCard";
 import { Skeleton, SectionSkeleton } from "@/components/ui/Skeleton";
 import ItemRow from "@/components/lancamento/ItemRow";
 import type { ResultadoOFX } from "@/lib/importacao";
-import type { ContaComSaldo, Transacao } from "@/types";
+import type { ContaComSaldo, PluggyItem, Transacao } from "@/types";
 import ContaModal from "./ContaModal";
 import TransacaoModal from "./TransacaoModal";
 import ImportModal from "./ImportModal";
+import { BancosConectados, PluggyWidget } from "./BancosConectados";
 
 const TIPO_LABEL = Object.fromEntries(TIPOS_CONTA.map(t => [t.v, t.label])) as Record<string, string>;
 
@@ -45,6 +48,11 @@ export default function ContasScreen() {
   const fam = useFamilia();
   const c = useContas(mes, ano);
   const { show: toast } = useToast();
+  const pg = usePluggy(c.recarregar);
+  const { dark } = useTheme();
+  const [widget, setWidget] = useState<{ token: string; updateItem?: string } | null>(null);
+  const [abrindoWidget, setAbrindoWidget] = useState(false);
+  const [confirmDesconectar, setConfirmDesconectar] = useState<PluggyItem | null>(null);
 
   const [pessoa, setPessoa] = useState<string>("todos");
   const [contaFiltro, setContaFiltro] = useState<string>("todas");
@@ -140,6 +148,47 @@ export default function ContasScreen() {
       : `${n} ${n === 1 ? "transação importada" : "transações importadas"}`);
   }
 
+  // ---- Bancos conectados (Pluggy) ----
+
+  async function abrirWidget(item?: PluggyItem) {
+    if (abrindoWidget) return;
+    setAbrindoWidget(true);
+    try {
+      const token = await pg.connectToken(item?.item_id);
+      setWidget({ token, updateItem: item?.item_id });
+    } catch (e) {
+      toast("Erro: " + (e as Error).message, true);
+    } finally {
+      setAbrindoWidget(false);
+    }
+  }
+
+  async function conectou(itemId: string) {
+    setWidget(null);
+    toast("Banco conectado — buscando suas transações…");
+    try {
+      const r = await pg.registrar(itemId);
+      toast(resumoSync(r.contas, r.novas, r.atualizando));
+    } catch (e) {
+      toast("Erro ao buscar os dados: " + (e as Error).message, true);
+    }
+  }
+
+  async function sincronizarBanco(item: PluggyItem) {
+    try {
+      const r = await pg.sincronizar(item);
+      toast(r ? resumoSync(r.contas, r.novas, r.atualizando) : "Sincronizado");
+    } catch (e) {
+      toast("Erro: " + (e as Error).message, true);
+    }
+  }
+
+  async function desconectarBanco() {
+    const item = confirmDesconectar;
+    setConfirmDesconectar(null);
+    if (item) await tentar(() => pg.desconectar(item), `${item.conector || "Banco"} desconectado`);
+  }
+
   function renderConta(x: ContaComSaldo) {
     const cartao = x.tipo === "cartao";
     return (
@@ -148,7 +197,7 @@ export default function ContasScreen() {
         icon={iconForConta(x.tipo)}
         tone={cartao ? "expense" : x.tipo === "investimento" ? "brand" : "income"}
         title={x.nome}
-        subtitle={[x.instituicao || TIPO_LABEL[x.tipo], emFamilia && pessoa === "todos" ? fam.nomeDe(x.user_id) : ""].filter(Boolean).join(" · ")}
+        subtitle={[x.instituicao || TIPO_LABEL[x.tipo], x.origem === "pluggy" ? "automática" : "", emFamilia && pessoa === "todos" ? fam.nomeDe(x.user_id) : ""].filter(Boolean).join(" · ")}
         value={cartao ? (x.saldo < 0 ? `Fatura ${brl(-x.saldo)}` : moeda(x.saldo)) : moeda(x.saldo)}
         valueClass={!cartao && x.saldo < 0 ? "text-danger" : undefined}
         muted={x.arquivada}
@@ -167,6 +216,17 @@ export default function ContasScreen() {
         <h1 className="text-lg font-semibold text-heading">Contas</h1>
         {!semContas && (
           <div className="flex items-center gap-2">
+            {!pg.semMigracao && (
+              <button
+                onClick={() => abrirWidget()}
+                disabled={abrindoWidget}
+                className="flex items-center gap-1.5 border border-border rounded-full px-3 md:pl-3 md:pr-4 py-2 text-sm font-semibold hover:bg-thead transition-colors disabled:opacity-50"
+              >
+                <Plug size={16} />
+                <span className="hidden sm:inline">Conectar banco</span>
+                <span className="sm:hidden">Conectar</span>
+              </button>
+            )}
             <button
               onClick={() => setImportOpen(true)}
               className="flex items-center gap-1.5 border border-border rounded-full px-3 md:pl-3 md:pr-4 py-2 text-sm font-semibold hover:bg-thead transition-colors"
@@ -218,14 +278,24 @@ export default function ContasScreen() {
               </span>
               <p className="text-[17px] font-semibold text-heading">Cadastre suas contas</p>
               <p className="text-sm text-muted mt-1.5 max-w-sm mx-auto leading-relaxed">
-                Conta corrente, cartão de crédito, investimentos… Depois é só importar o extrato (OFX ou CSV) que o app
-                calcula saldos e categoriza os gastos.
+                Conecte seu banco para as contas e transações chegarem sozinhas, ou cadastre à mão e importe o extrato
+                (OFX ou CSV). O app calcula saldos e categoriza os gastos.
               </p>
-              <button onClick={() => setContaModal("new")}
-                className="mt-5 inline-flex items-center gap-1.5 bg-brand text-onbrand rounded-full pl-3 pr-4 py-2.5 text-sm font-semibold hover:bg-brand/90 transition">
-                <Plus size={17} strokeWidth={2.5} />
-                Adicionar conta
-              </button>
+              <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
+                {!pg.semMigracao && (
+                  <button onClick={() => abrirWidget()} disabled={abrindoWidget}
+                    className="inline-flex items-center justify-center gap-1.5 bg-brand text-onbrand rounded-full pl-3 pr-4 py-2.5 text-sm font-semibold hover:bg-brand/90 transition disabled:opacity-50">
+                    <Plug size={17} strokeWidth={2.5} />
+                    {abrindoWidget ? "Abrindo…" : "Conectar banco"}
+                  </button>
+                )}
+                <button onClick={() => setContaModal("new")}
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-full pl-3 pr-4 py-2.5 text-sm font-semibold transition ${
+                    pg.semMigracao ? "bg-brand text-onbrand hover:bg-brand/90" : "border border-border hover:bg-thead"}`}>
+                  <Plus size={17} strokeWidth={2.5} />
+                  Adicionar à mão
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -243,6 +313,18 @@ export default function ContasScreen() {
                   <Parcela icon={CreditCard} label="Cartões" value={cartoes} />
                 </div>
               </section>
+
+              {!pg.semMigracao && !pg.loading && (
+                <BancosConectados
+                  itens={pg.itens.filter(i => pessoa === "todos" || i.user_id === pessoa)}
+                  sincronizando={pg.sincronizando}
+                  nomeDe={emFamilia && pessoa === "todos" ? fam.nomeDe : undefined}
+                  onConectar={() => abrirWidget()}
+                  onSincronizar={sincronizarBanco}
+                  onReconectar={item => abrirWidget(item)}
+                  onDesconectar={setConfirmDesconectar}
+                />
+              )}
 
               <SectionCard
                 icon={Landmark}
@@ -382,6 +464,23 @@ export default function ContasScreen() {
         onImport={importar}
         onClose={() => setImportOpen(false)}
       />
+      {widget && (
+        <PluggyWidget
+          token={widget.token}
+          updateItem={widget.updateItem}
+          dark={dark}
+          onSuccess={conectou}
+          onError={msg => toast("Pluggy: " + msg, true)}
+          onClose={() => setWidget(null)}
+        />
+      )}
+      <ConfirmModal
+        open={confirmDesconectar !== null}
+        title={`Desconectar ${confirmDesconectar?.conector || "banco"}?`}
+        message="O app para de buscar novidades deste banco e a autorização é removida na Pluggy. As contas e transações já trazidas continuam aqui, como contas manuais."
+        onConfirm={desconectarBanco}
+        onCancel={() => setConfirmDesconectar(null)}
+      />
       <ConfirmModal
         open={confirmConta !== null}
         title="Excluir conta?"
@@ -391,6 +490,13 @@ export default function ContasScreen() {
       />
     </div>
   );
+}
+
+function resumoSync(contas: number, novas: number, atualizando: boolean) {
+  const base = novas === 0 ? "Nada novo"
+    : `${novas} ${novas === 1 ? "transação nova" : "transações novas"}`;
+  const c = `${contas} ${contas === 1 ? "conta" : "contas"}`;
+  return `${base} · ${c}${atualizando ? " · o banco ainda está enviando dados, sincronize de novo em alguns minutos" : ""}`;
 }
 
 function Parcela({ icon: Icon, label, value }: { icon: typeof Wallet; label: string; value: number }) {

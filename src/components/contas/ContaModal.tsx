@@ -109,7 +109,9 @@ export default function ContaModal({ open, initial, membros, userId, onSave, onD
             allowNegative
           />
           <p className="text-xs text-muted mt-1.5 leading-relaxed">
-            {cartao
+            {initial?.origem === "pluggy"
+              ? "Vem do banco a cada sincronização — se mudar aqui, volta ao valor do banco na próxima."
+              : cartao
               ? "Quanto você deve no cartão agora. As compras lançadas aumentam a fatura e os pagamentos diminuem."
               : initial
                 ? "Mude se o saldo não bater com o do banco: o app ajusta a diferença sem mexer nas transações."
