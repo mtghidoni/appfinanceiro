@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // Webhooks chegam de serviços externos, sem login: a própria rota se protege.
+  if (request.nextUrl.pathname.startsWith("/api/webhooks/")) return NextResponse.next();
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

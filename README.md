@@ -50,6 +50,14 @@ O app busca contas, saldos e transações direto do banco usando a [Pluggy](http
 3. **Usar** — em *Contas*, toque em **Conectar banco**, escolha o banco e autorize. As contas aparecem como "automática" e
    são sincronizadas ao abrir a tela (se a última vez foi há mais de 6 h) ou pelo botão de sincronizar.
 
+4. **Webhook (opcional, recomendado)** — para os dados chegarem sem abrir o app, cadastre no painel da Pluggy
+   o webhook `https://SEU-DOMINIO/api/webhooks/pluggy` (evento `all`) e defina na Vercel:
+   - `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API Keys → service_role)
+   - `PLUGGY_WEBHOOK_SECRET` (opcional): um valor aleatório; no cadastro do webhook, adicione o header
+     `x-webhook-secret` com o mesmo valor.
+
+   O webhook só diz qual conexão mudou; o app busca os dados na API da Pluggy e só para conexões já cadastradas.
+
 Como funciona: o navegador nunca vê o Client Secret; ele pede um *connect token* de curta duração para
 `/api/pluggy/connect-token` e abre o widget da Pluggy. Ao terminar, `/api/pluggy/itens` registra a conexão
 (conferindo que ela foi criada pelo usuário logado) e importa os dados com as mesmas regras de categorização

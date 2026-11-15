@@ -116,26 +116,42 @@ export interface ResultadoSync {
 }
 
 /**
+ * Ids de quem divide os dados com `userId` (ele + membros da família).
+ * Filtro explícito: no webhook o cliente é admin e o RLS não se aplica.
+ */
+async function idsDaFamilia(supabase: SupabaseClient, userId: string): Promise<string[]> {
+  const { data: eu } = await supabase.from("familia_membros").select("familia_id").eq("user_id", userId).maybeSingle();
+  if (!eu?.familia_id) return [userId];
+  const { data } = await supabase.from("familia_membros").select("user_id").eq("familia_id", eu.familia_id);
+  const ids = new Set([userId, ...(data ?? []).map(m => m.user_id as string)]);
+  return Array.from(ids);
+}
+
+/**
  * Traz contas, saldos e transações de um banco conectado para o app.
- * Usa o cliente Supabase do usuário logado: tudo passa pelo RLS da família.
+ * Funciona com o cliente do usuário logado (RLS) ou com o admin (webhook):
+ * todas as consultas são limitadas à família do dono da conexão.
  */
 export async function sincronizarItem(supabase: SupabaseClient, row: PluggyItemRow): Promise<ResultadoSync> {
   const api = pluggy();
   const item = await itemDoUsuario(row.item_id, row.user_id);
   const conector = item.connector?.name ?? row.conector;
+  const familia = await idsDaFamilia(supabase, row.user_id);
 
   // Histórico de categorias da família, para categorizar como nas importações.
   const { data: hist } = await supabase.from("transacoes")
-    .select("descricao,categoria").order("data", { ascending: false }).limit(3000);
+    .select("descricao,categoria").in("user_id", familia)
+    .order("data", { ascending: false }).limit(3000);
   const historico = montarHistorico(((hist as { descricao: string; categoria: string }[]) ?? []).reverse());
 
   const { data: existentes, error: errContas } = await supabase.from("contas")
-    .select("id,external_id,ordem").eq("origem", "pluggy").not("external_id", "is", null);
+    .select("id,external_id,ordem").in("user_id", familia)
+    .eq("origem", "pluggy").not("external_id", "is", null);
   if (errContas) throw new Error(errContas.message);
   const contaPorExterno = new Map((existentes ?? []).map(c => [c.external_id as string, c.id as string]));
 
   const { data: ultimaOrdem } = await supabase.from("contas")
-    .select("ordem").order("ordem", { ascending: false }).limit(1);
+    .select("ordem").in("user_id", familia).order("ordem", { ascending: false }).limit(1);
   let ordem = (ultimaOrdem?.[0]?.ordem ?? -1) + 1;
 
   const { results: accounts } = await api.fetchAccounts(row.item_id);
